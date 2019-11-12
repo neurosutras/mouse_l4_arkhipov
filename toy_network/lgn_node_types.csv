@@ -1,0 +1,4 @@
+node_type_id model_type ei model_name location
+100 virtual e tON LGN
+101 virtual e tOFF LGN
+102 virtual e tONOFF LGN
