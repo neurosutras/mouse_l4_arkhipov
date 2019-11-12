@@ -3,7 +3,9 @@ import sys
 import os
 import numpy as np
 import pandas as pd
+import click
 
+from nested.utils import *
 from neuron import h
 
 from bmtk.simulator import bionet
@@ -13,12 +15,6 @@ from bmtk.analyzer.spike_trains import spike_statistics
 from bmtk.utils.io import ioutils
 
 from mpi4py import MPI
-
-
-### Use the set_world_comm function to run a simulation using a unique world communicator. Otherwsie bmtk used the
-###   default MPI_COMM_WORLD
-comm = MPI.COMM_WORLD
-ioutils.set_world_comm(comm)
 
 
 ### The l4 model consists of 45,000 individual cells divided into 7 different cell-type classes. The goal of this script
@@ -40,13 +36,87 @@ pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 
 
+@click.command(context_settings=dict(ignore_unknown_options=True, allow_extra_args=True, ))
+@click.option("--config-file-path", type=click.Path(exists=True, file_okay=True, dir_okay=False), default='config.json')
+@click.option("--debug", is_flag=True)
+@click.pass_context
+def main(cli, config_file_path, debug):
+    """
+
+    :param cli: contains unrecognized args as list of str
+    :param config_file_path: str (path)
+    :param debug: bool
+    """
+    kwargs = get_unknown_click_arg_dict(cli.args)
+    comm = MPI.COMM_WORLD
+    ioutils.set_world_comm(comm)
+    if comm != ioutils.bmtk_world_comm.comm:
+        raise RuntimeError('run_bionet: problem setting bmtk_world_comm')
+    print('comm rank/size: %i/%i; bionet.io_tools.io.mpi_size: %i' %
+          (comm.rank, comm.size, bionet.io_tools.io.mpi_size))
+    sys.stdout.flush()
+
+    conf = bionet.Config.from_json(config_file_path, validate=True)
+    conf.build_env()
+
+    # load network using config.json params
+    graph = bionet.BioNetwork.from_config(conf)
+
+    # run initial simulation using config.json params
+    sim = bionet.BioSimulator.from_config(conf, network=graph)
+    sim.run()
+
+    if not debug:
+
+        # Get the spike statistics of the output, using "groupby" will get averaged firing rates across each model
+        spike_stats_df = spike_statistics('output/spikes.h5', simulation=sim, groupby='model_name', populations='l4')
+
+        # Calculate gradients
+        gradients, mse = get_grads(spike_stats_df, target_frs)
+
+        # Update the synaptic weights
+        update_syn_weights(graph, gradients)
+
+        # Keep track of firing rates to display results at the end of run
+        rates_table = pd.DataFrame(columns=list(target_frs.keys()) + ['MSE'])
+        rates_table = update_rates_table(rates_table, spike_stats_df, mse)
+
+        for i in range(2, 5):
+            # initialize a new simulation
+            sim_step = bionet.BioSimulator(network=graph, dt=conf.dt, tstop=conf.tstop, v_init=conf.v_init,
+                                           celsius=conf.celsius, nsteps_block=conf.block_step)
+
+            # Attach mod to simulation that will be used to keep track of spikes.
+            spikes_recorder = SpikesMod(spikes_file='spikes.h5', tmp_dir='output', spikes_sort_order='gid', mode='w')
+            sim_step.add_mod(spikes_recorder)
+
+            # run simulation
+            sim_step.run()
+
+            # Get latest spiking statistics, calcuate gradients and update the weights
+            spike_stats_df = spike_statistics('output/spikes.h5', simulation=sim, groupby='model_name', populations='l4')
+            gradients, mse = get_grads(spike_stats_df, target_frs)
+            update_syn_weights(graph, gradients)
+            rates_table = update_rates_table(rates_table, spike_stats_df, mse)
+
+        # Save the connections in update_weights/ folder
+        connection_recorder = SaveSynapses('updated_weights')
+        connection_recorder.initialize(sim_step)
+        connection_recorder.finalize(sim_step)
+        comm.barrier()
+
+        if comm.rank == 0:
+            print(rates_table)
+
+    bionet.nrn.quit_execution()
+
+
 ### During the initial setup of the network this function will be called to calculate the synaptic weight of each
 ###  connection. By default bmtk will use the "syn_weight" value (stored in l4_node_types.csv), But we can use this
 ###  function to add some noise so every simulation is not exactly the same.
 @synaptic_weight
 def default_weight_fnc(edge_props, src_props, trg_props):
     return edge_props['syn_weight'] * np.random.uniform(0.6, 1.4)
-
 
 
 def get_grads(spike_stats, targets_frs, update_rule=0.0005):
@@ -94,62 +164,6 @@ def update_rates_table(rates_table, sim_stats, mse):
     return rates_table.append(nxt_row, sort=False)
 
 
-def run_iteration(config_file):
-    conf = bionet.Config.from_json(config_file, validate=True)
-    conf.build_env()
-
-    # load network using config.json params
-    graph = bionet.BioNetwork.from_config(conf)
-
-    # run initial simulation using config.json params
-    sim = bionet.BioSimulator.from_config(conf, network=graph)
-    sim.run()
-
-    # Get the spike statistics of the output, using "groupby" will get averaged firing rates across each model
-    spike_stats_df = spike_statistics('output/spikes.h5', simulation=sim, groupby='model_name', populations='l4')
-
-    # Calculate gradients
-    gradients, mse = get_grads(spike_stats_df, target_frs)
-
-    # Update the synaptic weights
-    update_syn_weights(graph, gradients)
-
-    # Keep track of firing rates to display results at the end of run
-    rates_table = pd.DataFrame(columns=list(target_frs.keys()) + ['MSE'])
-    rates_table = update_rates_table(rates_table, spike_stats_df, mse)
-
-    for i in range(2, 5):
-        # initialize a new simulation
-        sim_step = bionet.BioSimulator(network=graph, dt=conf.dt, tstop=conf.tstop, v_init=conf.v_init,
-                                       celsius=conf.celsius, nsteps_block=conf.block_step)
-
-        # Attach mod to simulation that will be used to keep track of spikes.
-        spikes_recorder = SpikesMod(spikes_file='spikes.h5', tmp_dir='output', spikes_sort_order='gid', mode='w')
-        sim_step.add_mod(spikes_recorder)
-
-        # run simulation
-        sim_step.run()
-
-        # Get latest spiking statistics, calcuate gradients and update the weights
-        spike_stats_df = spike_statistics('output/spikes.h5', simulation=sim, groupby='model_name', populations='l4')
-        gradients, mse = get_grads(spike_stats_df, target_frs)
-        update_syn_weights(graph, gradients)
-        rates_table = update_rates_table(rates_table, spike_stats_df, mse)
-
-    # Save the connections in update_weights/ folder
-    connection_recorder = SaveSynapses('updated_weights')
-    connection_recorder.initialize(sim_step)
-    connection_recorder.finalize(sim_step)
-    comm.barrier()
-
-    if comm.rank == 0:
-        print(rates_table)
-
-    bionet.nrn.quit_execution()
-
-
 if __name__ == '__main__':
-    if __file__ != sys.argv[-1]:
-        run_iteration(sys.argv[-1])
-    else:
-        run_iteration('config.json')
+    main(args=sys.argv[(list_find(lambda s: s.find(os.path.basename(__file__)) != -1, sys.argv) + 1):],
+         standalone_mode=False)
