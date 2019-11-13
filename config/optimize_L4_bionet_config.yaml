@@ -1,0 +1,119 @@
+bounds:
+  weight_factor_LIF_exc_e: !!python/tuple
+    - 0.1
+    - 10.
+  weight_factor_LIF_exc_i: !!python/tuple
+    - 0.1
+    - 10.
+  weight_factor_LIF_inh_e: !!python/tuple
+    - 0.1
+    - 10.
+  weight_factor_LIF_inh_i: !!python/tuple
+    - 0.1
+    - 10.
+  weight_factor_Nr5a1_e: !!python/tuple
+    - 0.1
+    - 10.
+  weight_factor_Nr5a1_i: !!python/tuple
+    - 0.1
+    - 10.
+  weight_factor_PV1_e: !!python/tuple
+    - 0.1
+    - 10.
+  weight_factor_PV1_i: !!python/tuple
+    - 0.1
+    - 10.
+  weight_factor_PV2_e: !!python/tuple
+    - 0.1
+    - 10.
+  weight_factor_PV2_i: !!python/tuple
+    - 0.1
+    - 10.
+  weight_factor_Rorb_e: !!python/tuple
+    - 0.1
+    - 10.
+  weight_factor_Rorb_i: !!python/tuple
+    - 0.1
+    - 10.
+  weight_factor_Scnn1a_e: !!python/tuple
+    - 0.1
+    - 10.
+  weight_factor_Scnn1a_i: !!python/tuple
+    - 0.1
+    - 10.
+rel_bounds:
+feature_names:
+- mean_rate_LIF_exc
+- mean_rate_LIF_inh
+- mean_rate_Nr5a1
+- mean_rate_PV1
+- mean_rate_PV2
+- mean_rate_Rorb
+- mean_rate_Scnn1a
+update_context:
+- - optimize_L4_bionet
+  - update_context
+get_features_stages:
+- source: optimize_L4_bionet
+  compute_features: compute_features
+get_objectives:
+  optimize_simple_network: get_objectives
+kwargs:
+  verbose: 1
+  bionet_config_file_path: toy_network_config.json
+objective_names:
+- mean_rate_LIF_exc
+- mean_rate_LIF_inh
+- mean_rate_Nr5a1
+- mean_rate_PV1
+- mean_rate_PV2
+- mean_rate_Rorb
+- mean_rate_Scnn1a
+optimization_title: L4_bionet
+param_gen: PopulationAnnealing
+param_names:
+- weight_factor_LIF_exc_e
+- weight_factor_LIF_exc_i
+- weight_factor_LIF_inh_e
+- weight_factor_LIF_inh_i
+- weight_factor_Nr5a1_e
+- weight_factor_Nr5a1_i
+- weight_factor_PV1_e
+- weight_factor_PV1_i
+- weight_factor_PV2_e
+- weight_factor_PV2_i
+- weight_factor_Rorb_e
+- weight_factor_Rorb_i
+- weight_factor_Scnn1a_e
+- weight_factor_Scnn1a_i
+target_range:
+  mean_rate_LIF_exc: 0.1
+  mean_rate_LIF_inh: 0.1
+  mean_rate_Nr5a1: 0.1
+  mean_rate_PV1: 0.1
+  mean_rate_PV2: 0.1
+  mean_rate_Rorb: 0.1
+  mean_rate_Scnn1a: 0.1
+target_val:
+  mean_rate_LIF_exc: 3.33
+  mean_rate_LIF_inh: 5.9
+  mean_rate_Nr5a1: 4.60
+  mean_rate_PV1: 8.86
+  mean_rate_PV2: 9.46
+  mean_rate_Rorb: 4.19
+  mean_rate_Scnn1a: 4.24
+x0:
+  weight_factor_LIF_exc_e: 1.
+  weight_factor_LIF_exc_i: 1.
+  weight_factor_LIF_inh_e: 1.
+  weight_factor_LIF_inh_i: 1.
+  weight_factor_Nr5a1_e: 1.
+  weight_factor_Nr5a1_i: 1.
+  weight_factor_PV1_e: 1.
+  weight_factor_PV1_i: 1.
+  weight_factor_PV2_e: 1.
+  weight_factor_PV2_i: 1.
+  weight_factor_Rorb_e: 1.
+  weight_factor_Rorb_i: 1.
+  weight_factor_Scnn1a_e: 1.
+  weight_factor_Scnn1a_i: 1.

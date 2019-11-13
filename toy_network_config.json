@@ -3,7 +3,7 @@
     "$BASE_DIR": "${configdir}",
     "$OUTPUT_DIR": "$BASE_DIR/output",
     "$INPUT_DIR": "$BASE_DIR/inputs",
-    "$NETWORK_DIR": "$BASE_DIR/network",
+    "$NETWORK_DIR": "$BASE_DIR/toy_network",
     "$COMPONENT_DIR": "$BASE_DIR/biophys_components"
   },
 
@@ -27,14 +27,14 @@
     "LGN_spikes": {
       "input_type": "spikes",
       "module": "sonata",
-      "input_file": "$INPUT_DIR/LGN_spikes.g217.t0.h5",
+      "input_file": "$INPUT_DIR/lgn_spikes.h5",
       "node_set": "lgn",
       "enabled": true
     },
     "TW_spikes": {
       "input_type": "spikes",
       "module": "sonata",
-      "input_file": "$INPUT_DIR/TW_spikes.g217.t0.h5",
+      "input_file": "$INPUT_DIR/tw_spikes.h5",
       "node_set": "tw",
       "enabled": true
     }

@@ -4,6 +4,7 @@ import os
 import numpy as np
 import pandas as pd
 
+from mpi4py import MPI
 from neuron import h
 
 from bmtk.simulator import bionet
@@ -11,8 +12,6 @@ from bmtk.simulator.bionet.nrn import synaptic_weight
 from bmtk.simulator.bionet.modules import SaveSynapses, SpikesMod
 from bmtk.analyzer.spike_trains import spike_statistics
 from bmtk.utils.io import ioutils
-
-from mpi4py import MPI
 
 
 ### Use the set_world_comm function to run a simulation using a unique world communicator. Otherwsie bmtk used the
