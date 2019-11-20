@@ -1,0 +1,115 @@
+bounds:
+  weight_factor.LIF_exc.PV1: !!python/tuple
+    - 0.1
+    - 10.
+  weight_factor.LIF_inh.PV1: !!python/tuple
+    - 0.1
+    - 10.
+  weight_factor.Nr5a1.PV1: !!python/tuple
+    - 0.1
+    - 10.
+  weight_factor.PV1.PV1: !!python/tuple
+    - 0.1
+    - 10.
+  weight_factor.PV2.PV1: !!python/tuple
+    - 0.1
+    - 10.
+  weight_factor.Rorb.PV1: !!python/tuple
+    - 0.1
+    - 10.
+  weight_factor.Scnn1a.PV1: !!python/tuple
+    - 0.1
+    - 10.
+rel_bounds:
+feature_names:
+- spont_rate.LIF_exc
+- spont_rate.LIF_inh
+- spont_rate.Nr5a1
+- spont_rate.PV1
+- spont_rate.PV2
+- spont_rate.Rorb
+- spont_rate.Scnn1a
+- grating_rate.LIF_exc
+- grating_rate.LIF_inh
+- grating_rate.Nr5a1
+- grating_rate.PV1
+- grating_rate.PV2
+- grating_rate.Rorb
+- grating_rate.Scnn1a
+update_context:
+- - optimize_L4_bionet
+  - update_context
+get_features_stages:
+- source: optimize_L4_bionet
+  compute_features: compute_features
+get_objectives:
+  optimize_simple_network: get_objectives
+kwargs:
+  verbose: 1
+  bionet_config_file_path: config.json
+  grating_angle: 0.
+  input_dir: /global/cscratch1/sd/aaronmil/optimize_L4_bionet/inputs
+  network_dir: /global/cscratch1/sd/aaronmil/optimize_L4_bionet/network
+objective_names:
+- spont_rate.LIF_exc
+- spont_rate.LIF_inh
+- spont_rate.Nr5a1
+- spont_rate.PV1
+- spont_rate.PV2
+- spont_rate.Rorb
+- spont_rate.Scnn1a
+- grating_rate.LIF_exc
+- grating_rate.LIF_inh
+- grating_rate.Nr5a1
+- grating_rate.PV1
+- grating_rate.PV2
+- grating_rate.Rorb
+- grating_rate.Scnn1a
+optimization_title: L4_bionet
+param_gen: PopulationAnnealing
+param_names:
+- weight_factor.LIF_exc.PV1
+- weight_factor.LIF_inh.PV1
+- weight_factor.Nr5a1.PV1
+- weight_factor.PV1.PV1
+- weight_factor.PV2.PV1
+- weight_factor.Rorb.PV1
+- weight_factor.Scnn1a.PV1
+target_range:
+  spont_rate.LIF_exc: 0.1
+  spont_rate.LIF_inh: 0.1
+  spont_rate.Nr5a1: 0.1
+  spont_rate.PV1: 0.1
+  spont_rate.PV2: 0.1
+  spont_rate.Rorb: 0.1
+  spont_rate.Scnn1a: 0.1
+  grating_rate.LIF_exc: 0.1
+  grating_rate.LIF_inh: 0.1
+  grating_rate.Nr5a1: 0.1
+  grating_rate.PV1: 0.1
+  grating_rate.PV2: 0.1
+  grating_rate.Rorb: 0.1
+  grating_rate.Scnn1a: 0.1
+target_val:
+  spont_rate.LIF_exc: 3.33
+  spont_rate.LIF_inh: 5.9
+  spont_rate.Nr5a1: 4.60
+  spont_rate.PV1: 8.86
+  spont_rate.PV2: 9.46
+  spont_rate.Rorb: 4.19
+  spont_rate.Scnn1a: 4.24
+  grating_rate.LIF_exc: 3.33
+  grating_rate.LIF_inh: 5.9
+  grating_rate.Nr5a1: 4.60
+  grating_rate.PV1: 8.86
+  grating_rate.PV2: 9.46
+  grating_rate.Rorb: 4.19
+  grating_rate.Scnn1a: 4.24
+x0:
+  weight_factor.LIF_exc.PV1: 1.
+  weight_factor.LIF_inh.PV1: 1.
+  weight_factor.Nr5a1.PV1: 1.
+  weight_factor.PV1.PV1: 1.
+  weight_factor.PV2.PV1: 1.
+  weight_factor.Rorb.PV1: 1.
+  weight_factor.Scnn1a.PV1: 1.
