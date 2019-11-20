@@ -107,6 +107,8 @@ def config_worker():
 
     bionet_config_dict = json.load(open(context.bionet_config_file_path, 'r'))
     bionet_config_dict['manifest']['$OUTPUT_DIR'] = temp_output_dir
+    if 'input_dir' in context():
+        bionet_config_dict['manifest']['$INPUT_DIR'] = context.input_dir
     conf = bionet.Config.from_dict(bionet_config_dict, validate=True)
     conf.build_env()
 
