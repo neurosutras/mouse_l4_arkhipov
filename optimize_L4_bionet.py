@@ -228,7 +228,9 @@ def compute_features(x, export=False):
 
     if export:
         updated_weights_dir = context.export_file_path.replace('.hdf5', '')
-        os.mkdir(updated_weights_dir)
+        if context.comm.rank == 0:
+            os.mkdir(updated_weights_dir)
+        context.comm.barrier()
         connection_recorder = SaveSynapses(updated_weights_dir)
         connection_recorder.initialize(sim_step)
         connection_recorder.finalize(sim_step)
@@ -342,7 +344,7 @@ def scale_projection_weights(graph, weight_factors, init_weights=None):
                 source_pop_name = con.source_node._population
             else:
                 source_pop_name = con.source_node['model_name']
-            
+
             if target_pop_name not in weight_factors or source_pop_name not in weight_factors[target_pop_name]:
                 continue
 
@@ -358,8 +360,9 @@ def scale_projection_weights(graph, weight_factors, init_weights=None):
 
 
 def shutdown_worker():
-    if os.path.isdir(context.temp_output_dir):
-        shutil.rmtree(context.temp_output_dir)
+    if context.comm.rank == 0:
+        if os.path.isdir(context.temp_output_dir):
+            shutil.rmtree(context.temp_output_dir)
 
 
 if __name__ == '__main__':
