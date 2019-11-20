@@ -27,14 +27,14 @@
     "LGN_spikes": {
       "input_type": "spikes",
       "module": "sonata",
-      "input_file": "$INPUT_DIR/LGN_spikes.g217.t0.h5",
+      "input_file": "$INPUT_DIR/LGN_spikes.g8.t0.h5",
       "node_set": "lgn",
       "enabled": true
     },
     "TW_spikes": {
       "input_type": "spikes",
       "module": "sonata",
-      "input_file": "$INPUT_DIR/TW_spikes.g217.t0.h5",
+      "input_file": "$INPUT_DIR/TW_spikes.g8.t0.h5",
       "node_set": "tw",
       "enabled": true
     }

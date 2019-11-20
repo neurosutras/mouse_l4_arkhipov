@@ -46,7 +46,7 @@ get_objectives:
   optimize_simple_network: get_objectives
 kwargs:
   verbose: 1
-  bionet_config_file_path: config.json
+  bionet_config_file_path: toy_network_config.json
   grating_angle: 0.
 objective_names:
 - spont_rate.LIF_exc
@@ -63,7 +63,7 @@ objective_names:
 - grating_rate.PV2
 - grating_rate.Rorb
 - grating_rate.Scnn1a
-optimization_title: L4_bionet
+optimization_title: L4_bionet_toy
 param_gen: PopulationAnnealing
 param_names:
 - weight_factor.LIF_exc.PV1

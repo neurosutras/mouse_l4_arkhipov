@@ -16,8 +16,9 @@ from collections import defaultdict
 from bmtk.simulator import bionet
 from bmtk.simulator.bionet.nrn import synaptic_weight
 from bmtk.simulator.bionet.modules import SaveSynapses, SpikesMod
-from bmtk.analyzer.spike_trains import spike_statistics
+# from bmtk.analyzer.spike_trains import spike_statistics
 from bmtk.utils.io import ioutils
+from bmtk.utils.reports import SpikeTrains
 
 
 pd.set_option('display.max_columns', None)
@@ -28,7 +29,7 @@ context = Context()
 
 @click.command(context_settings=dict(ignore_unknown_options=True, allow_extra_args=True, ))
 @click.option("--config-file-path", type=click.Path(exists=True, file_okay=True, dir_okay=False),
-              default='config/optimize_L4_bionet_config.yaml')
+              default='config/optimize_L4_bionet_toy_config.yaml')
 @click.option("--export", is_flag=True)
 @click.option("--output-dir", type=str, default='data')
 @click.option("--export-file-path", type=str, default=None)
@@ -111,11 +112,39 @@ def config_worker():
 
     spikes_file_path = conf.output['output_dir'] + '/' + conf.output['spikes_file']
 
-    # load network using config.json params
+    # construct network using config.json params
     graph = bionet.BioNetwork.from_config(conf)
 
-    # run initial simulation using config.json params
+    # initialize simulation using config.json params
     sim = bionet.BioSimulator.from_config(conf, network=graph)
+
+    init_weights = defaultdict(dict)
+    for target_gid, cell in graph.get_local_cells().items():
+        target_pop_name = cell['model_name']
+
+        for con in cell.connections():
+            source_pop_name = con.source_node['model_name']
+            init_weights[target_pop_name][con] = con.syn_weight
+
+    if context.comm.rank == 0:
+        tuned_node_ids = []
+        graph_node_props_df = graph.get_node_groups(populations='l4').groupby('model_name')
+        for (pop_name, node_props_df) in graph_node_props_df:
+            (i, first_row) = next(node_props_df.iterrows())
+            if first_row['ei'] == 'i':
+                tuned_node_ids.extend(node_props_df.node_id.values)
+            else:
+                node_props_df_copy = node_props_df.copy()
+                node_props_df_copy['sort_val'] = abs(node_props_df_copy.tuning_angle - context.grating_angle)
+                node_props_df_copy = node_props_df_copy.sort_values('sort_val')
+                tuned_node_ids.extend(node_props_df_copy.node_id.values[:50])
+
+        epochs = {'spont': {'start': 0.,
+                            'stop': 500.,},
+                  'grating': {'start': 500.,
+                              'stop': 1000.,
+                              'node_ids': tuned_node_ids}
+                  }
 
     if context.verbose > 1 and context.comm.rank == 0:
         print('optimize_L4_bionet: initialization took %.2f s' % (time.time() - start_time))
@@ -159,7 +188,15 @@ def update_context(x, local_context=None):
         local_context = context
     x_dict = param_array_to_dict(x, local_context.param_names)
 
-    # update_syn_weights(graph, gradients)
+    local_context.weight_factors = defaultdict(dict)
+
+    for param_name, param_val in x_dict.items():
+        param_type, target_pop_name, source_pop_name = param_name.split('.')
+        if param_type == 'weight_factor':
+            local_context.weight_factors[target_pop_name][source_pop_name] = param_val
+
+    scale_projection_weights(graph=local_context.graph, weight_factors=local_context.weight_factors,
+                             init_weights=local_context.init_weights)
 
 
 def compute_features(x, export=False):
@@ -184,15 +221,6 @@ def compute_features(x, export=False):
     # run simulation
     sim_step.run()
 
-    # Get the spike statistics of the output, using "groupby" will get averaged firing rates across each model
-    spike_stats_df = spike_statistics(context.spikes_file_path, simulation=sim_step, groupby='model_name',
-                                      populations='l4')
-
-    results = dict()
-    for pop_name, rate_val in spike_stats_df['firing_rate']['mean'].items():
-        feature_name = 'mean_rate_' + pop_name
-        results[feature_name] = rate_val
-
     if export:
         updated_weights_dir = context.export_file_path.replace('.hdf5', '')
         os.mkdir(updated_weights_dir)
@@ -201,7 +229,80 @@ def compute_features(x, export=False):
         connection_recorder.finalize(sim_step)
         context.comm.barrier()
 
-    return results
+    if context.comm.rank == 0:
+        results = dict()
+        # Get the average firing rates per epoch per population
+        firing_rates_dict = get_population_spike_rates_by_epoch(
+            context.spikes_file_path, simulation=sim_step, groupby='model_name', epochs=context.epochs,
+            populations='l4')
+        for epoch_name in firing_rates_dict:
+            for pop_name, rate_val in firing_rates_dict[epoch_name]['firing_rate']['mean'].items():
+                feature_name = epoch_name + '_rate.' + pop_name
+                results[feature_name] = rate_val
+
+        return results
+
+
+def get_population_spike_rates_by_epoch(spikes_file, simulation, groupby=None, epochs=None, **filterparams):
+    """
+
+    :param spikes_file: path to .h5 file
+    :param simulation: :class:'BioSimulator'
+    :param groupby: str
+    :param epochs: dict: {str: tuple of float (ms)}
+    :param filterparams:
+    :return: pd.dataframe
+    """
+    def get_epoch_firing_rate(r, start, stop):
+        """
+
+        :param r: pd.Series
+        :param start: float (ms)
+        :param stop: float (ms)
+        :return: pd.Series
+        """
+        d = {}
+        count = len(np.where((r['timestamps'] > start) & (r['timestamps'] <= stop))[0])
+        d['firing_rate'] = count / (stop - start) * 1000.  # Hz
+
+        return pd.Series(d, index=['firing_rate'])
+
+    def get_epoch_dataframe(epoch_df, nodes_df, groupby):
+        """
+
+        :param epoch_df: pd.DataFrame
+        :param nodes_df: pd.DataFrame
+        :param groupby: str
+        :return: pd.DataFrame
+        """
+        epoch_df.index.names = ['population', 'node_id']
+        epoch_df = pd.merge(nodes_df, epoch_df, left_index=True, right_index=True, how='left')
+        epoch_df = epoch_df.fillna({'firing_rate': 0.0})
+        epoch_df = epoch_df.groupby(groupby)[['firing_rate']].agg([np.mean, np.std])
+
+        return epoch_df
+
+    spike_trains = SpikeTrains.load(spikes_file)
+    spike_train_df = spike_trains.to_dataframe()
+    nodes_df = simulation.net.node_properties(**filterparams)
+    sim_time_ms = simulation.simulation_time(units='ms')
+    rate_df = dict()
+
+    if epochs is None:
+        full_df = spike_train_df.groupby(['population', 'node_ids']).apply(get_epoch_firing_rate, 0., sim_time_ms)
+        full_df = get_epoch_dataframe(full_df, nodes_df, groupby)
+        return full_df
+    else:
+        for epoch_name, epoch_dict in epochs.items():
+            if 'node_ids' in epoch_dict and len(epoch_dict['node_ids']) > 0:
+                epoch_df = spike_train_df[spike_train_df.node_ids.isin(epoch_dict['node_ids'])]
+            else:
+                epoch_df = spike_train_df.copy()
+            epoch_df = epoch_df.groupby(['population', 'node_ids']).apply(
+                get_epoch_firing_rate, epoch_dict['start'], epoch_dict['stop'])
+            rate_df[epoch_name] = get_epoch_dataframe(epoch_df, nodes_df, groupby)
+
+    return rate_df
 
 
 def get_objectives(features, export=False):
@@ -213,31 +314,42 @@ def get_objectives(features, export=False):
     """
     if context.comm.rank == 0:
         objectives = {}
-        for objective_name in context.objective_names:
+        for objective_name in features:  # context.objective_names:
             objectives[objective_name] = ((context.target_val[objective_name] - features[objective_name]) /
                                           context.target_range[objective_name]) ** 2.
         return features, objectives
 
 
-def update_syn_weights(net, gradients):
-    """Go through each cell and update their synaptic weights by the gradient (determined by the cell's model_name).
-
-    If the incoming synapse is excitatory we update the weight by +gradient and if it is inhibitory we update the weight
-    by -gradient.
+def scale_projection_weights(graph, weight_factors, init_weights=None):
     """
-
-    for gid, cell in net.get_local_cells().items():
-        trg_pop = cell['model_name']
+    Iterate over local cells and connections, and scale weights according to target and source population. If
+    init_weights are specified, the initial weights for each connection are scaled. Otherwise, the current weight value
+    of each connection is scaled.
+    :param graph: :class:'BioNetwork'
+    :param weight_factors: dict: {target_pop_name (str): {source_pop_name (str): float} }
+    :param init_weights: dict: {target_gid (int): {connection (:class:'ConnectionStruct'): float} }
+    """
+    for target_gid, cell in graph.get_local_cells().items():
+        target_pop_name = cell['model_name']
 
         for con in cell.connections():
-            if con.is_virtual:
+            # if con.is_virtual:
+            #    continue
+
+            source_pop_name = con.source_node['model_name']
+
+            if target_pop_name not in weight_factors or source_pop_name not in weight_factors[target_pop_name]:
                 continue
 
-            src_node = con.source_node
-            src_type = src_node['ei']
-            con.syn_weight += gradients[trg_pop]*(-1.0 if src_type == 'i' else 1.0)
-
-            con.syn_weight = max(con.syn_weight, 0.0)
+            if init_weights is not None:
+                if con not in init_weights[target_pop_name]:
+                    raise KeyError('scale_projection_weights: no initial weight stored for connection between %s cell '
+                                   '%i and %s cell %i' %
+                                   (target_pop_name, target_gid, source_pop_name, con.source_node.gid))
+                init_weight = init_weights[target_pop_name][con]
+            else:
+                init_weight = con.syn_weight
+            con.syn_weight = init_weight * weight_factors[target_pop_name][source_pop_name]
 
 
 def shutdown_worker():
