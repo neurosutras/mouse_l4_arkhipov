@@ -129,7 +129,6 @@ def config_worker():
         target_pop_name = cell['model_name']
 
         for con in cell.connections():
-            source_pop_name = con.source_node['model_name']
             init_weights[target_pop_name][con] = con.syn_weight
 
     if context.comm.rank == 0:
@@ -339,11 +338,11 @@ def scale_projection_weights(graph, weight_factors, init_weights=None):
         target_pop_name = cell['model_name']
 
         for con in cell.connections():
-            # if con.is_virtual:
-            #    continue
-
-            source_pop_name = con.source_node['model_name']
-
+            if con.is_virtual:
+                source_pop_name = con.source_node._population
+            else:
+                source_pop_name = con.source_node['model_name']
+            
             if target_pop_name not in weight_factors or source_pop_name not in weight_factors[target_pop_name]:
                 continue
 
