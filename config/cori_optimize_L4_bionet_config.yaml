@@ -43,7 +43,7 @@ get_features_stages:
 - source: optimize_L4_bionet
   compute_features: compute_features
 get_objectives:
-  optimize_simple_network: get_objectives
+  optimize_L4_bionet: get_objectives
 kwargs:
   verbose: 1
   bionet_config_file_path: config.json
