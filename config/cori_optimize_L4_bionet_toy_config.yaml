@@ -48,7 +48,8 @@ kwargs:
   verbose: 1
   bionet_config_file_path: toy_network_config.json
   grating_angle: 0.
-  input_dir: /global/cscratch1/sd/aaronmil/optimize_L4_bionet
+  input_dir: /global/cscratch1/sd/aaronmil/optimize_L4_bionet/inputs
+  network_dir: /global/cscratch1/sd/aaronmil/optimize_L4_bionet/toy_network
 objective_names:
 - spont_rate.LIF_exc
 - spont_rate.LIF_inh

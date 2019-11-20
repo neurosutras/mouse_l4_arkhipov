@@ -94,6 +94,8 @@ def config_worker():
     temp_output_dir = context.temp_output_path.replace('.hdf5', '')
     temp_output_dir = context.comm.bcast(temp_output_dir, root=0)
     if context.comm.rank == 0:
+        if not os.path.isdir(context.output_dir):
+            os.mkdir(context.output_dir)
         os.mkdir(temp_output_dir)
 
     ioutils.set_world_comm(context.comm)
@@ -107,8 +109,10 @@ def config_worker():
 
     bionet_config_dict = json.load(open(context.bionet_config_file_path, 'r'))
     bionet_config_dict['manifest']['$OUTPUT_DIR'] = temp_output_dir
-    if 'input_dir' in context():
+    if 'input_dir' in context() and os.path.isdir(context.input_dir):
         bionet_config_dict['manifest']['$INPUT_DIR'] = context.input_dir
+    if 'network_dir' in context() and os.path.isdir(context.network_dir):
+        bionet_config_dict['manifest']['$NETWORK_DIR'] = context.network_dir
     conf = bionet.Config.from_dict(bionet_config_dict, validate=True)
     conf.build_env()
 
