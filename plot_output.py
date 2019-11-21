@@ -1,6 +1,8 @@
 from bmtk.analyzer.visualization.spikes import plot_raster
 import matplotlib.pyplot as plt
 import click
+import os, sys
+from nested.utils import list_find
 
 
 @click.command()
@@ -24,3 +26,8 @@ def main(spikes_file_path, with_histogram, with_labels, group_by, nodes_file_pat
     plot_raster(spikes_file_path, with_histogram=with_histogram, with_labels=with_labels, group_by=group_by,
                 show_plot=False, nodes_file=nodes_file_path, node_types_file=node_types_file_path)
     plt.show()
+
+
+if __name__ == '__main__':
+    main(args=sys.argv[(list_find(lambda s: s.find(os.path.basename(__file__)) != -1, sys.argv) + 1):],
+         standalone_mode=False)

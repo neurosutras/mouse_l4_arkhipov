@@ -12,6 +12,7 @@ from nested.parallel import *
 from nested.optimize_utils import *
 from neuron import h
 from collections import defaultdict
+from distutils.dir_util import copy_tree
 
 from bmtk.simulator import bionet
 from bmtk.simulator.bionet.nrn import synaptic_weight
@@ -133,7 +134,7 @@ def config_worker():
 
     if context.comm.rank == 0:
         tuned_node_ids = []
-        graph_node_props_df = graph.get_node_groups(populations='l4').groupby('model_name')
+        graph_node_props_df = graph.get_node_groups(populations='l4', verbose=False).groupby('model_name')
         for (pop_name, node_props_df) in graph_node_props_df:
             (i, first_row) = next(node_props_df.iterrows())
             if first_row['ei'] == 'i':
@@ -220,18 +221,20 @@ def compute_features(x, export=False):
     # Attach mod to simulation that will be used to keep track of spikes.
 
     spikes_recorder = \
-        SpikesMod(spikes_file=context.spikes_file_path, tmp_dir='', spikes_sort_order='gid', mode='w')
+        SpikesMod(spikes_file=context.conf.output['spikes_file'], tmp_dir=context.temp_output_dir,
+                  spikes_sort_order='gid', mode='w')
     sim_step.add_mod(spikes_recorder)
 
     # run simulation
     sim_step.run()
 
     if export:
-        updated_weights_dir = context.export_file_path.replace('.hdf5', '')
+        export_dir = context.export_file_path.replace('.hdf5', '')
         if context.comm.rank == 0:
-            os.mkdir(updated_weights_dir)
+            if not os.path.isdir(export_dir):
+                os.mkdir(export_dir)
         context.comm.barrier()
-        connection_recorder = SaveSynapses(updated_weights_dir)
+        connection_recorder = SaveSynapses(export_dir)
         connection_recorder.initialize(sim_step)
         connection_recorder.finalize(sim_step)
         context.comm.barrier()
@@ -246,6 +249,9 @@ def compute_features(x, export=False):
             for pop_name, rate_val in firing_rates_dict[epoch_name]['firing_rate']['mean'].items():
                 feature_name = epoch_name + '_rate.' + pop_name
                 results[feature_name] = rate_val
+
+        if export:
+            copy_tree(context.temp_output_dir, export_dir)
 
         return results
 
