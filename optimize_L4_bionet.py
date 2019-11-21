@@ -17,7 +17,6 @@ from distutils.dir_util import copy_tree
 from bmtk.simulator import bionet
 from bmtk.simulator.bionet.nrn import synaptic_weight
 from bmtk.simulator.bionet.modules import SaveSynapses, SpikesMod
-# from bmtk.analyzer.spike_trains import spike_statistics
 from bmtk.utils.io import ioutils
 from bmtk.utils.reports import SpikeTrains
 
@@ -131,6 +130,29 @@ def config_worker():
 
         for con in cell.connections():
             init_weights[target_pop_name][con] = con.syn_weight
+
+    if context.debug:
+        syn_count = defaultdict(lambda: defaultdict(int))
+        for target_pop_name in init_weights:
+            for con in init_weights[target_pop_name]:
+                if con.is_virtual:
+                    source_pop_name = con.source_node._population
+                else:
+                    source_pop_name = con.source_node['model_name']
+                syn_count[target_pop_name][source_pop_name] += 1
+        syn_count = defaultdict_to_dict(syn_count)
+        syn_count_list = context.comm.gather(syn_count, root=0)
+        if context.comm.rank == 0:
+            gathered_syn_count = defaultdict(lambda: defaultdict(int))
+            for this_syn_count in syn_count_list:
+                for target_pop_name in this_syn_count:
+                    for source_pop_name in this_syn_count[target_pop_name]:
+                        gathered_syn_count[target_pop_name][source_pop_name] += \
+                            this_syn_count[target_pop_name][source_pop_name]
+            print('syn_count: %s' % str(gathered_syn_count))
+            sys.stdout.flush()
+            time.sleep(1.)
+        context.comm.barrier()
 
     if context.comm.rank == 0:
         tuned_node_ids = []

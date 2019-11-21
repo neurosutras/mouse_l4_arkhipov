@@ -45,7 +45,7 @@ get_features_stages:
 get_objectives:
   optimize_L4_bionet: get_objectives
 kwargs:
-  verbose: 1
+  verbose: 2
   bionet_config_file_path: config.json
   grating_angle: 0.
   input_dir: /global/cscratch1/sd/aaronmil/optimize_L4_bionet/inputs
