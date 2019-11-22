@@ -149,30 +149,47 @@ def config_worker():
                     for source_pop_name in this_syn_count[target_pop_name]:
                         gathered_syn_count[target_pop_name][source_pop_name] += \
                             this_syn_count[target_pop_name][source_pop_name]
-            print('syn_count: %s' % str(gathered_syn_count))
+            print('synapse counts per projection')
+            pprint.pprint(defaultdict_to_dict(gathered_syn_count))
             sys.stdout.flush()
             time.sleep(1.)
         context.comm.barrier()
 
     if context.comm.rank == 0:
-        tuned_node_ids = []
+        node_ids = {'grating_rate': [], 'grating_pref_rate': [], 'grating_ortho_rate': []}
         graph_node_props_df = graph.get_node_groups(populations='l4', verbose=False).groupby('model_name')
         for (pop_name, node_props_df) in graph_node_props_df:
             (i, first_row) = next(node_props_df.iterrows())
             if first_row['ei'] == 'i':
-                tuned_node_ids.extend(node_props_df.node_id.values)
+                node_ids['grating_rate'].extend(node_props_df.node_id.values)
             else:
-                node_props_df_copy = node_props_df.copy()
-                node_props_df_copy['sort_val'] = abs(node_props_df_copy.tuning_angle - context.grating_angle)
-                node_props_df_copy = node_props_df_copy.sort_values('sort_val')
-                tuned_node_ids.extend(node_props_df_copy.node_id.values[:50])
+                for category, target_angle in [('grating_pref_rate', context.grating_angle),
+                                               ('grating_ortho_rate', (context.grating_angle + 90.) % 360.)]:
+                    node_props_df_copy = node_props_df.copy()
+                    node_props_df_copy['sort_val'] = abs(node_props_df_copy.tuning_angle - target_angle)
+                    node_props_df_copy = node_props_df_copy.sort_values('sort_val')
+                    node_ids[category].extend(node_props_df_copy.node_id.values[:50])
 
-        epochs = {'spont': {'start': 0.,
-                            'stop': 500.,},
-                  'grating': {'start': 500.,
-                              'stop': 1000.,
-                              'node_ids': tuned_node_ids}
+        epochs = {'spont_rate': {'start': 0.,
+                                 'stop': 500.,},
+                  'grating_rate': {'start': 500.,
+                                   'stop': 1000.,
+                                   'node_ids': node_ids['grating_rate']},
+                  'grating_pref_rate': {'start': 500.,
+                                        'stop': 1000.,
+                                        'node_ids': node_ids['grating_pref_rate']},
+                  'grating_ortho_rate': {'start': 500.,
+                                        'stop': 1000.,
+                                        'node_ids': node_ids['grating_ortho_rate']}
                   }
+
+        if context.debug:
+            print('Firing rate analysis epochs:')
+            pprint.pprint(epochs)
+            update_context(context.x0_array)
+            pprint.pprint(context.weight_factors)
+            sys.stdout.flush()
+            time.sleep(1.)
 
     if context.verbose > 1 and context.comm.rank == 0:
         print('optimize_L4_bionet: initialization took %.2f s' % (time.time() - start_time))
@@ -219,9 +236,10 @@ def update_context(x, local_context=None):
     local_context.weight_factors = defaultdict(dict)
 
     for param_name, param_val in x_dict.items():
-        param_type, target_pop_name, source_pop_name = param_name.split('.')
+        param_type, target_pop_name, pop_category = param_name.split('.')
         if param_type == 'weight_factor':
-            local_context.weight_factors[target_pop_name][source_pop_name] = param_val
+            for source_pop_name in context.pop_categories[pop_category]:
+                local_context.weight_factors[target_pop_name][source_pop_name] = param_val
 
     scale_projection_weights(graph=local_context.graph, weight_factors=local_context.weight_factors,
                              init_weights=local_context.init_weights)
@@ -269,7 +287,7 @@ def compute_features(x, export=False):
             populations='l4')
         for epoch_name in firing_rates_dict:
             for pop_name, rate_val in firing_rates_dict[epoch_name]['firing_rate']['mean'].items():
-                feature_name = epoch_name + '_rate.' + pop_name
+                feature_name = '%s.%s' % (epoch_name, pop_name)
                 results[feature_name] = rate_val
 
         if export:
@@ -311,8 +329,8 @@ def get_population_spike_rates_by_epoch(spikes_file, simulation, groupby=None, e
         :return: pd.DataFrame
         """
         epoch_df.index.names = ['population', 'node_id']
-        epoch_df = pd.merge(nodes_df, epoch_df, left_index=True, right_index=True, how='left')
-        epoch_df = epoch_df.fillna({'firing_rate': 0.0})
+        epoch_df = pd.merge(nodes_df, epoch_df, left_index=True, right_index=True, how='right')  # how='left')
+        # epoch_df = epoch_df.fillna({'firing_rate': 0.0})
         epoch_df = epoch_df.groupby(groupby)[['firing_rate']].agg([np.mean, np.std])
 
         return epoch_df
@@ -349,7 +367,7 @@ def get_objectives(features, export=False):
     """
     if context.comm.rank == 0:
         objectives = {}
-        for objective_name in features:  # context.objective_names:
+        for objective_name in context.objective_names:
             objectives[objective_name] = ((context.target_val[objective_name] - features[objective_name]) /
                                           context.target_range[objective_name]) ** 2.
         return features, objectives
