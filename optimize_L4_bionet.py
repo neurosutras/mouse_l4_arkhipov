@@ -186,8 +186,6 @@ def config_worker():
         if context.debug:
             print('Firing rate analysis epochs:')
             pprint.pprint(epochs)
-            update_context(context.x0_array)
-            pprint.pprint(context.weight_factors)
             sys.stdout.flush()
             time.sleep(1.)
 
@@ -243,6 +241,12 @@ def update_context(x, local_context=None):
 
     scale_projection_weights(graph=local_context.graph, weight_factors=local_context.weight_factors,
                              init_weights=local_context.init_weights)
+
+    if local_context.debug and local_context.comm.rank == 0:
+        print('weight_factors:')
+        pprint.pprint(local_context.weight_factors)
+        sys.stdout.flush()
+        time.sleep(1.)
 
 
 def compute_features(x, export=False):
