@@ -332,32 +332,39 @@ def get_population_spike_rates_by_epoch(spikes_file, simulation, groupby=None, e
         :param groupby: str
         :return: pd.DataFrame
         """
-        epoch_df.index.names = ['population', 'node_id']
-        epoch_df = pd.merge(nodes_df, epoch_df, left_index=True, right_index=True, how='right')  # how='left')
-        # epoch_df = epoch_df.fillna({'firing_rate': 0.0})
+        if len(epoch_df) > 0:
+            epoch_df.index.names = ['population', 'node_id']
+            epoch_df = pd.merge(nodes_df, epoch_df, left_index=True, right_index=True, how='left')
+            epoch_df = epoch_df.fillna({'firing_rate': 0.0})
+        else:
+            epoch_df = nodes_df.assign(firing_rate=[0.] * len(nodes_df))
+
         epoch_df = epoch_df.groupby(groupby)[['firing_rate']].agg([np.mean, np.std])
 
         return epoch_df
 
     spike_trains = SpikeTrains.load(spikes_file)
     spike_train_df = spike_trains.to_dataframe()
-    nodes_df = simulation.net.node_properties(**filterparams)
+    full_nodes_df = simulation.net.node_properties(**filterparams)
     sim_time_ms = simulation.simulation_time(units='ms')
     rate_df = dict()
 
     if epochs is None:
-        full_df = spike_train_df.groupby(['population', 'node_ids']).apply(get_epoch_firing_rate, 0., sim_time_ms)
-        full_df = get_epoch_dataframe(full_df, nodes_df, groupby)
-        return full_df
+        full_spikes_df = spike_train_df.groupby(['population', 'node_ids']).apply(
+            get_epoch_firing_rate, 0., sim_time_ms)
+        full_rate_df = get_epoch_dataframe(full_spikes_df, full_nodes_df, groupby)
+        return full_rate_df
     else:
         for epoch_name, epoch_dict in epochs.items():
             if 'node_ids' in epoch_dict and len(epoch_dict['node_ids']) > 0:
                 epoch_df = spike_train_df[spike_train_df.node_ids.isin(epoch_dict['node_ids'])]
+                subset_nodes_df = full_nodes_df[full_nodes_df.index.isin(epoch_dict['node_ids'], level='node_id')]
             else:
                 epoch_df = spike_train_df.copy()
+                subset_nodes_df = full_nodes_df.copy()
             epoch_df = epoch_df.groupby(['population', 'node_ids']).apply(
                 get_epoch_firing_rate, epoch_dict['start'], epoch_dict['stop'])
-            rate_df[epoch_name] = get_epoch_dataframe(epoch_df, nodes_df, groupby)
+            rate_df[epoch_name] = get_epoch_dataframe(epoch_df, subset_nodes_df, groupby)
 
     return rate_df
 

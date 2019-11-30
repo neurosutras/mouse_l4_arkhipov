@@ -91,9 +91,11 @@ get_features_stages:
 get_objectives:
   optimize_L4_bionet: get_objectives
 kwargs:
-  verbose: 2
-  bionet_config_file_path: toy_network_config.json
+  verbose: 1
+  bionet_config_file_path: config.json
   grating_angle: 0.
+  input_dir: /global/cscratch1/sd/aaronmil/optimize_L4_bionet/inputs
+  network_dir: /global/cscratch1/sd/aaronmil/optimize_L4_bionet/network
   pop_categories:
     l4_i:
       - LIF_inh
@@ -126,7 +128,7 @@ objective_names:
 - grating_ortho_rate.Rorb
 - grating_pref_rate.Scnn1a
 - grating_ortho_rate.Scnn1a
-optimization_title: L4_bionet_toy
+optimization_title: L4_bionet
 param_gen: PopulationAnnealing
 param_names:
 - weight_factor.LIF_exc.l4_i
@@ -204,7 +206,7 @@ x0:
   weight_factor.Rorb.l4_e: 0.1
   weight_factor.Scnn1a.l4_e: 0.1
   weight_factor.LIF_exc.ext: 0.1
-  weight_factor.LIF_inh.ext: 1.
+  weight_factor.LIF_inh.ext: 0.1
   weight_factor.Nr5a1.ext: 0.1
   weight_factor.PV1.ext: 0.1
   weight_factor.PV2.ext: 0.1
