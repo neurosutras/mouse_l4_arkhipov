@@ -189,7 +189,7 @@ def config_worker():
             sys.stdout.flush()
             time.sleep(1.)
 
-    if context.verbose > 1 and context.comm.rank == 0:
+    if context.verbose > 0 and context.comm.rank == 0:
         print('optimize_L4_bionet: initialization took %.2f s' % (time.time() - start_time))
 
     context.update(locals())
