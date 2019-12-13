@@ -1,0 +1,22 @@
+'slow':
+  weight_factor.LIF_exc.l4_i: 5.728691E-01
+  weight_factor.LIF_inh.l4_i: 1.127461E-01
+  weight_factor.Nr5a1.l4_i: 1.416736E-01
+  weight_factor.PV1.l4_i: 4.494237E-01
+  weight_factor.PV2.l4_i: 3.425846E-01
+  weight_factor.Rorb.l4_i: 3.112310E-01
+  weight_factor.Scnn1a.l4_i: 1.054784E+00
+  weight_factor.LIF_exc.l4_e: 5.845146E+00
+  weight_factor.LIF_inh.l4_e: 1.195112E-01
+  weight_factor.Nr5a1.l4_e: 1.082096E-01
+  weight_factor.PV1.l4_e: 7.002834E+00
+  weight_factor.PV2.l4_e: 1.371559E+00
+  weight_factor.Rorb.l4_e: 7.994677E-01
+  weight_factor.Scnn1a.l4_e: 4.362747E+00
+  weight_factor.LIF_exc.ext: 2.026711E+00
+  weight_factor.LIF_inh.ext: 3.065089E-01
+  weight_factor.Nr5a1.ext: 4.218662E-01
+  weight_factor.PV1.ext: 1.657404E-01
+  weight_factor.PV2.ext: 3.529746E+00
+  weight_factor.Rorb.ext: 1.251188E-01
+  weight_factor.Scnn1a.ext: 9.791044E+00
