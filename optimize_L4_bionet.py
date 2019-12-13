@@ -274,7 +274,7 @@ def compute_features(x, export=False):
     # run simulation
     sim_step.run()
 
-    if context.verbose > 0 and context.comm.rank == 0:
+    if context.verbose > 1 and context.comm.rank == 0:
         print('optimize_L4_bionet: pid: %i; simulation with x: %s took %.2f s' %
               (os.getpid(), str(list(x)), time.time() - start_time))
         sys.stdout.flush()
@@ -302,7 +302,7 @@ def compute_features(x, export=False):
             for pop_name, rate_val in firing_rates_dict[epoch_name]['firing_rate']['mean'].items():
                 feature_name = '%s.%s' % (epoch_name, pop_name)
                 results[feature_name] = rate_val
-        if context.verbose > 0:
+        if context.verbose > 1:
             print('optimize_L4_bionet: pid: %i; analysis with x: %s took %.2f s' %
                   (os.getpid(), str(list(x)), time.time() - start_time))
             sys.stdout.flush()
