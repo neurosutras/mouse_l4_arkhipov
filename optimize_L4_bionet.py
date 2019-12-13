@@ -191,6 +191,8 @@ def config_worker():
 
     if context.verbose > 0 and context.comm.rank == 0:
         print('optimize_L4_bionet: initialization took %.2f s' % (time.time() - start_time))
+        sys.stdout.flush()
+        time.sleep(1.)
 
     context.update(locals())
 
@@ -257,13 +259,13 @@ def compute_features(x, export=False):
     :return: dict
     """
     update_source_contexts(x, context)
+    start_time = time.time()
 
     conf = context.conf
     sim_step = bionet.BioSimulator(network=context.graph, dt=conf.dt, tstop=conf.tstop, v_init=conf.v_init,
                                    celsius=conf.celsius, nsteps_block=conf.block_step)
 
     # Attach mod to simulation that will be used to keep track of spikes.
-
     spikes_recorder = \
         SpikesMod(spikes_file=context.conf.output['spikes_file'], tmp_dir=context.temp_output_dir,
                   spikes_sort_order='gid', mode='w')
@@ -271,6 +273,12 @@ def compute_features(x, export=False):
 
     # run simulation
     sim_step.run()
+
+    if context.verbose > 0 and context.comm.rank == 0:
+        print('optimize_L4_bionet: pid: %i; simulation with x: %s took %.2f s' %
+              (os.getpid(), str(list(x)), time.time() - start_time))
+        sys.stdout.flush()
+        time.sleep(.1)
 
     if export:
         export_dir = context.export_file_path.replace('.hdf5', '')
@@ -284,6 +292,7 @@ def compute_features(x, export=False):
         context.comm.barrier()
 
     if context.comm.rank == 0:
+        start_time = time.time()
         results = dict()
         # Get the average firing rates per epoch per population
         firing_rates_dict = get_population_spike_rates_by_epoch(
@@ -293,7 +302,11 @@ def compute_features(x, export=False):
             for pop_name, rate_val in firing_rates_dict[epoch_name]['firing_rate']['mean'].items():
                 feature_name = '%s.%s' % (epoch_name, pop_name)
                 results[feature_name] = rate_val
-
+        if context.verbose > 0:
+            print('optimize_L4_bionet: pid: %i; analysis with x: %s took %.2f s' %
+                  (os.getpid(), str(list(x)), time.time() - start_time))
+            sys.stdout.flush()
+            time.sleep(.1)
         if export:
             copy_tree(context.temp_output_dir, export_dir)
 
