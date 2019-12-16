@@ -157,7 +157,7 @@ def config_worker():
 
     if context.comm.rank == 0:
         node_ids = {'grating_rate': [], 'grating_pref_rate': [], 'grating_ortho_rate': []}
-        graph_node_props_df = graph.get_node_groups(populations='l4', verbose=False).groupby('model_name')
+        graph_node_props_df = graph.get_node_groups(populations='l4').groupby('model_name')
         for (pop_name, node_props_df) in graph_node_props_df:
             (i, first_row) = next(node_props_df.iterrows())
             if first_row['ei'] == 'i':
@@ -265,14 +265,28 @@ def compute_features(x, export=False):
     sim_step = bionet.BioSimulator(network=context.graph, dt=conf.dt, tstop=conf.tstop, v_init=conf.v_init,
                                    celsius=conf.celsius, nsteps_block=conf.block_step)
 
-    # Attach mod to simulation that will be used to keep track of spikes.
-    spikes_recorder = \
-        SpikesMod(spikes_file=context.conf.output['spikes_file'], tmp_dir=context.temp_output_dir,
-                  spikes_sort_order='gid', mode='w')
-    sim_step.add_mod(spikes_recorder)
+    if context.export:
+        # Attach mod to simulation that will be used to keep track of spikes.
+        spikes_recorder = \
+            SpikesMod(spikes_file=context.conf.output['spikes_file'], tmp_dir=context.temp_output_dir,
+                      spikes_sort_order='gid', mode='w')
+        sim_step.add_mod(spikes_recorder)
+    else:
+        # Record spikes but do not cache to disk:
+        sim_step.set_spikes_recording()
 
     # run simulation
     sim_step.run()
+
+    if context.debug:
+        for rank in range(context.comm.size):
+            if rank == context.comm.rank:
+                print('rank: %i' % context.comm.rank)
+                print(sim_step.spikes_table.keys())
+                sys.stdout.flush()
+            else:
+                time.sleep(0.5)
+        return dict()
 
     if context.verbose > 1 and context.comm.rank == 0:
         print('optimize_L4_bionet: pid: %i; simulation with x: %s took %.2f s' %
@@ -281,6 +295,7 @@ def compute_features(x, export=False):
         time.sleep(.1)
 
     if export:
+        start_time = time.time()
         export_dir = context.export_file_path.replace('.hdf5', '')
         if context.comm.rank == 0:
             if not os.path.isdir(export_dir):
@@ -289,15 +304,34 @@ def compute_features(x, export=False):
         connection_recorder = SaveSynapses(export_dir)
         connection_recorder.initialize(sim_step)
         connection_recorder.finalize(sim_step)
+        if context.verbose > 1 and context.comm.rank == 0:
+            print('optimize_L4_bionet: pid: %i; exporting connection weights with x: %s took %.2f s' %
+                  (os.getpid(), str(list(x)), time.time() - start_time))
+            sys.stdout.flush()
+            time.sleep(.1)
         context.comm.barrier()
 
+    start_time = time.time()
+    results = dict()
+
+    # Get the average firing rates per epoch per population
+    if export:
+        if context.comm.rank == 0:
+            firing_rates_dict = get_population_spike_rates_by_epoch_from_file(
+                context.spikes_file_path, simulation=sim_step, groupby='model_name', epochs=context.epochs,
+                populations='l4')
+    else:
+        return dict()
+        """
+        firing_rates_dict = get_population_spike_rates_by_epoch_from_sim(
+            simulation=sim_step, groupby='model_name', epochs=context.epochs, populations='l4')
+        all_firing_rates_dict_list = context.comm.gather(firing_rates_dict, root=0)
+        if context.comm.rank == 0:
+            firing_rates_dict = merge_population_spike_rates_by_epoch(all_firing_rates_dict_list)
+        context.comm.barrier()
+        """
+
     if context.comm.rank == 0:
-        start_time = time.time()
-        results = dict()
-        # Get the average firing rates per epoch per population
-        firing_rates_dict = get_population_spike_rates_by_epoch(
-            context.spikes_file_path, simulation=sim_step, groupby='model_name', epochs=context.epochs,
-            populations='l4')
         for epoch_name in firing_rates_dict:
             for pop_name, rate_val in firing_rates_dict[epoch_name]['firing_rate']['mean'].items():
                 feature_name = '%s.%s' % (epoch_name, pop_name)
@@ -313,7 +347,7 @@ def compute_features(x, export=False):
         return results
 
 
-def get_population_spike_rates_by_epoch(spikes_file, simulation, groupby=None, epochs=None, **filterparams):
+def get_population_spike_rates_by_epoch_from_file(spikes_file, simulation, groupby=None, epochs=None, **filterparams):
     """
 
     :param spikes_file: path to .h5 file
@@ -321,7 +355,75 @@ def get_population_spike_rates_by_epoch(spikes_file, simulation, groupby=None, e
     :param groupby: str
     :param epochs: dict: {str: tuple of float (ms)}
     :param filterparams:
-    :return: pd.dataframe
+    :return: dict
+    """
+    def get_epoch_firing_rate(r, start, stop):
+        """
+
+        :param r: pd.Series
+        :param start: float (ms)
+        :param stop: float (ms)
+        :return: pd.Series
+        """
+        d = {}
+        count = len(np.where((r['timestamps'] > start) & (r['timestamps'] <= stop))[0])
+        d['firing_rate'] = count / (stop - start) * 1000.  # Hz
+
+        return pd.Series(d, index=['firing_rate'])
+
+    def get_epoch_dataframe(epoch_df, nodes_df, groupby):
+        """
+
+        :param epoch_df: pd.DataFrame
+        :param nodes_df: pd.DataFrame
+        :param groupby: str
+        :return: pd.DataFrame
+        """
+        if len(epoch_df) > 0:
+            epoch_df.index.names = ['population', 'node_id']
+            epoch_df = pd.merge(nodes_df, epoch_df, left_index=True, right_index=True, how='left')
+            epoch_df = epoch_df.fillna({'firing_rate': 0.0})
+        else:
+            epoch_df = nodes_df.assign(firing_rate=[0.] * len(nodes_df))
+
+        epoch_df = epoch_df.groupby(groupby)[['firing_rate']].agg([np.mean, np.std])
+
+        return epoch_df
+
+    spike_trains = SpikeTrains.load(spikes_file)
+    spike_train_df = spike_trains.to_dataframe()
+    full_nodes_df = simulation.net.node_properties(**filterparams)
+    sim_time_ms = simulation.simulation_time(units='ms')
+    rate_df = dict()
+
+    if epochs is None:
+        full_spikes_df = spike_train_df.groupby(['population', 'node_ids']).apply(
+            get_epoch_firing_rate, 0., sim_time_ms)
+        full_rate_df = get_epoch_dataframe(full_spikes_df, full_nodes_df, groupby)
+        rate_df['full'] = full_rate_df
+    else:
+        for epoch_name, epoch_dict in epochs.items():
+            if 'node_ids' in epoch_dict and len(epoch_dict['node_ids']) > 0:
+                epoch_df = spike_train_df[spike_train_df.node_ids.isin(epoch_dict['node_ids'])]
+                subset_nodes_df = full_nodes_df[full_nodes_df.index.isin(epoch_dict['node_ids'], level='node_id')]
+            else:
+                epoch_df = spike_train_df
+                subset_nodes_df = full_nodes_df.copy()
+            epoch_df = epoch_df.groupby(['population', 'node_ids']).apply(
+                get_epoch_firing_rate, epoch_dict['start'], epoch_dict['stop'])
+            rate_df[epoch_name] = get_epoch_dataframe(epoch_df, subset_nodes_df, groupby)
+
+    return rate_df
+
+
+def get_population_spike_rates_by_epoch_from_sim(simulation, groupby=None, epochs=None, population=None):
+    """
+
+    :param simulation: :class:'BioSimulator'
+    :param groupby: str
+    :param epochs: dict: {str: tuple of float (ms)}
+    :param population: str
+    :return: dict
     """
     def get_epoch_firing_rate(r, start, stop):
         """
