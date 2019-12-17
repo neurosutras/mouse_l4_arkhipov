@@ -364,7 +364,7 @@ def get_firing_rates_by_cell_type_from_file(spikes_file, simulation, population=
 
     :param spikes_file: path to .h5 file
     :param simulation: :class:'BioSimulator'
-    :param populations: str
+    :param population: str
     :param cell_type_attr_name: str
     :param epochs: dict: {str: tuple of float (ms)}
     :return: dict
@@ -415,7 +415,7 @@ def get_local_firing_rates_by_cell_type_from_sim(simulation, population='l4', ce
     """
 
     :param simulation: :class:'BioSimulator'
-    :param populations: str
+    :param population: str
     :param cell_type_attr_name: str
     :param epochs: dict: {str: tuple of float (ms)}
     :return: dict
