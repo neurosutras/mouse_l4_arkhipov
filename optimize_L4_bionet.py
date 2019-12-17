@@ -188,6 +188,9 @@ def config_worker():
             pprint.pprint(epochs)
             sys.stdout.flush()
             time.sleep(1.)
+    else:
+        epochs = None
+    epochs = context.comm.bcast(epochs, root=0)
 
     if context.verbose > 0 and context.comm.rank == 0:
         print('optimize_L4_bionet: initialization took %.2f s' % (time.time() - start_time))
@@ -278,16 +281,6 @@ def compute_features(x, export=False):
     # run simulation
     sim_step.run()
 
-    if context.debug:
-        for rank in range(context.comm.size):
-            if rank == context.comm.rank:
-                print('rank: %i' % context.comm.rank)
-                print(sim_step.spikes_table.keys())
-                sys.stdout.flush()
-            else:
-                time.sleep(0.5)
-        return dict()
-
     if context.verbose > 1 and context.comm.rank == 0:
         print('optimize_L4_bionet: pid: %i; simulation with x: %s took %.2f s' %
               (os.getpid(), str(list(x)), time.time() - start_time))
@@ -295,12 +288,14 @@ def compute_features(x, export=False):
         time.sleep(.1)
 
     if export:
-        start_time = time.time()
         export_dir = context.export_file_path.replace('.hdf5', '')
         if context.comm.rank == 0:
             if not os.path.isdir(export_dir):
                 os.mkdir(export_dir)
         context.comm.barrier()
+
+    if export and not context.debug:
+        start_time = time.time()
         connection_recorder = SaveSynapses(export_dir)
         connection_recorder.initialize(sim_step)
         connection_recorder.finalize(sim_step)
@@ -312,176 +307,164 @@ def compute_features(x, export=False):
         context.comm.barrier()
 
     start_time = time.time()
-    results = dict()
-
-    # Get the average firing rates per epoch per population
+    # Get the average firing rates per cell type in each epoch
     if export:
         if context.comm.rank == 0:
-            firing_rates_dict = get_population_spike_rates_by_epoch_from_file(
-                context.spikes_file_path, simulation=sim_step, groupby='model_name', epochs=context.epochs,
-                populations='l4')
+            firing_rates_dict = \
+                get_firing_rates_by_cell_type_from_file(context.spikes_file_path, simulation=sim_step,
+                                                        population='l4', epochs=context.epochs)
     else:
-        return dict()
-        """
-        firing_rates_dict = get_population_spike_rates_by_epoch_from_sim(
-            simulation=sim_step, groupby='model_name', epochs=context.epochs, populations='l4')
-        all_firing_rates_dict_list = context.comm.gather(firing_rates_dict, root=0)
+        local_firing_rates_dict = \
+            get_local_firing_rates_by_cell_type_from_sim(sim_step, population='l4', epochs=context.epochs)
+        list_of_local_firing_rates_dict = context.comm.gather(local_firing_rates_dict, root=0)
         if context.comm.rank == 0:
-            firing_rates_dict = merge_population_spike_rates_by_epoch(all_firing_rates_dict_list)
-        context.comm.barrier()
-        """
+            firing_rates_dict = dict()
+            for local_firing_rates_dict in list_of_local_firing_rates_dict:
+                for epoch_name in local_firing_rates_dict:
+                    if epoch_name not in firing_rates_dict:
+                        firing_rates_dict[epoch_name] = dict()
+                    for cell_type in local_firing_rates_dict[epoch_name]:
+                        if cell_type not in firing_rates_dict[epoch_name]:
+                            firing_rates_dict[epoch_name][cell_type] = []
+                        firing_rates_dict[epoch_name][cell_type].extend(local_firing_rates_dict[epoch_name][cell_type])
+    context.comm.barrier()
 
     if context.comm.rank == 0:
+        if export:
+            copy_tree(context.temp_output_dir, export_dir)
+
         for epoch_name in firing_rates_dict:
-            for pop_name, rate_val in firing_rates_dict[epoch_name]['firing_rate']['mean'].items():
+            for cell_type in firing_rates_dict[epoch_name]:
+                firing_rates_dict[epoch_name][cell_type] = np.mean(firing_rates_dict[epoch_name][cell_type])
+
+        results = dict()
+        for epoch_name in firing_rates_dict:
+            for pop_name, rate_val in firing_rates_dict[epoch_name].items():
                 feature_name = '%s.%s' % (epoch_name, pop_name)
                 results[feature_name] = rate_val
+
         if context.verbose > 1:
             print('optimize_L4_bionet: pid: %i; analysis with x: %s took %.2f s' %
                   (os.getpid(), str(list(x)), time.time() - start_time))
             sys.stdout.flush()
             time.sleep(.1)
-        if export:
-            copy_tree(context.temp_output_dir, export_dir)
+
+        if context.debug:
+            pprint.pprint(firing_rates_dict)
+            sys.stdout.flush()
+            time.sleep(.1)
+            context.update(locals())
 
         return results
 
 
-def get_population_spike_rates_by_epoch_from_file(spikes_file, simulation, groupby=None, epochs=None, **filterparams):
+def get_firing_rates_by_cell_type_from_file(spikes_file, simulation, population='l4', cell_type_attr_name='model_name',
+                                            epochs=None):
     """
 
     :param spikes_file: path to .h5 file
     :param simulation: :class:'BioSimulator'
-    :param groupby: str
+    :param populations: str
+    :param cell_type_attr_name: str
     :param epochs: dict: {str: tuple of float (ms)}
-    :param filterparams:
     :return: dict
     """
-    def get_epoch_firing_rate(r, start, stop):
+    def get_firing_rates_by_cell_type(spike_trains, population, node_ids, cell_type_dict, start, stop):
         """
 
-        :param r: pd.Series
-        :param start: float (ms)
-        :param stop: float (ms)
-        :return: pd.Series
         """
-        d = {}
-        count = len(np.where((r['timestamps'] > start) & (r['timestamps'] <= stop))[0])
-        d['firing_rate'] = count / (stop - start) * 1000.  # Hz
-
-        return pd.Series(d, index=['firing_rate'])
-
-    def get_epoch_dataframe(epoch_df, nodes_df, groupby):
-        """
-
-        :param epoch_df: pd.DataFrame
-        :param nodes_df: pd.DataFrame
-        :param groupby: str
-        :return: pd.DataFrame
-        """
-        if len(epoch_df) > 0:
-            epoch_df.index.names = ['population', 'node_id']
-            epoch_df = pd.merge(nodes_df, epoch_df, left_index=True, right_index=True, how='left')
-            epoch_df = epoch_df.fillna({'firing_rate': 0.0})
-        else:
-            epoch_df = nodes_df.assign(firing_rate=[0.] * len(nodes_df))
-
-        epoch_df = epoch_df.groupby(groupby)[['firing_rate']].agg([np.mean, np.std])
-
-        return epoch_df
+        rate_dict = dict()
+        duration = (stop - start) / 1000.  # sec
+        for gid in node_ids:
+            cell_type = cell_type_dict[gid]
+            if cell_type not in rate_dict:
+                rate_dict[cell_type] = []
+            spike_times = spike_trains.get_times(gid, population=population, time_window=[start, stop])
+            rate = len(spike_times) / duration  # Hz
+            rate_dict[cell_type].append(rate)
+        return rate_dict
 
     spike_trains = SpikeTrains.load(spikes_file)
-    spike_train_df = spike_trains.to_dataframe()
-    full_nodes_df = simulation.net.node_properties(**filterparams)
-    sim_time_ms = simulation.simulation_time(units='ms')
-    rate_df = dict()
+    cell_type_dict = dict()
+    all_nodes_df = simulation.net.get_node_groups(populations=population)
+    all_node_ids = all_nodes_df['node_id'].values
+    for gid, cell_type in all_nodes_df[['node_id', cell_type_attr_name]].values:
+        cell_type_dict[gid] = cell_type
+    sim_end = simulation.simulation_time(units='ms')
 
+    rate_dict = dict()
     if epochs is None:
-        full_spikes_df = spike_train_df.groupby(['population', 'node_ids']).apply(
-            get_epoch_firing_rate, 0., sim_time_ms)
-        full_rate_df = get_epoch_dataframe(full_spikes_df, full_nodes_df, groupby)
-        rate_df['full'] = full_rate_df
+        rate_dict['full'] = \
+            get_firing_rates_by_cell_type(spike_trains, population, all_node_ids, cell_type_dict, start=0.,
+                                          stop=sim_end)
     else:
         for epoch_name, epoch_dict in epochs.items():
             if 'node_ids' in epoch_dict and len(epoch_dict['node_ids']) > 0:
-                epoch_df = spike_train_df[spike_train_df.node_ids.isin(epoch_dict['node_ids'])]
-                subset_nodes_df = full_nodes_df[full_nodes_df.index.isin(epoch_dict['node_ids'], level='node_id')]
+                this_node_ids = epoch_dict['node_ids']
             else:
-                epoch_df = spike_train_df
-                subset_nodes_df = full_nodes_df.copy()
-            epoch_df = epoch_df.groupby(['population', 'node_ids']).apply(
-                get_epoch_firing_rate, epoch_dict['start'], epoch_dict['stop'])
-            rate_df[epoch_name] = get_epoch_dataframe(epoch_df, subset_nodes_df, groupby)
+                this_node_ids = all_node_ids
+            rate_dict[epoch_name] = \
+                get_firing_rates_by_cell_type(spike_trains, population, this_node_ids, cell_type_dict,
+                                              start=epoch_dict['start'], stop=epoch_dict['stop'])
 
-    return rate_df
+    return rate_dict
 
 
-def get_population_spike_rates_by_epoch_from_sim(simulation, groupby=None, epochs=None, population=None):
+def get_local_firing_rates_by_cell_type_from_sim(simulation, population='l4', cell_type_attr_name='model_name',
+                                                 epochs=None):
     """
 
     :param simulation: :class:'BioSimulator'
-    :param groupby: str
+    :param populations: str
+    :param cell_type_attr_name: str
     :param epochs: dict: {str: tuple of float (ms)}
-    :param population: str
     :return: dict
     """
-    def get_epoch_firing_rate(r, start, stop):
+    def get_firing_rates_by_cell_type(spikes_table, population, node_ids, cell_type_dict, start, stop):
         """
 
-        :param r: pd.Series
-        :param start: float (ms)
-        :param stop: float (ms)
-        :return: pd.Series
         """
-        d = {}
-        count = len(np.where((r['timestamps'] > start) & (r['timestamps'] <= stop))[0])
-        d['firing_rate'] = count / (stop - start) * 1000.  # Hz
+        rate_dict = dict()
+        duration = (stop - start) / 1000.  # sec
+        for gid in node_ids:
+            cell_type = cell_type_dict[gid]
+            if cell_type not in rate_dict:
+                rate_dict[cell_type] = []
+            spike_times = np.array(spikes_table[gid])
+            spike_times = spike_times[(start <= spike_times) & (spike_times <= stop)]
+            rate = len(spike_times) / duration  # Hz
+            rate_dict[cell_type].append(rate)
+        return rate_dict
 
-        return pd.Series(d, index=['firing_rate'])
+    spikes_table = simulation.spikes_table
+    local_cells = simulation.net.get_local_cells()
+    gid_pool = simulation.net.gid_pool
+    cell_type_dict = dict()
+    all_local_node_ids = []
 
-    def get_epoch_dataframe(epoch_df, nodes_df, groupby):
-        """
+    for gid, cell in local_cells.items():
+        if population == gid_pool.get_pool_id(gid).population:
+            cell_type = cell[cell_type_attr_name]
+            cell_type_dict[gid] = cell_type
+            all_local_node_ids.append(gid)
+    sim_end = simulation.simulation_time(units='ms')
 
-        :param epoch_df: pd.DataFrame
-        :param nodes_df: pd.DataFrame
-        :param groupby: str
-        :return: pd.DataFrame
-        """
-        if len(epoch_df) > 0:
-            epoch_df.index.names = ['population', 'node_id']
-            epoch_df = pd.merge(nodes_df, epoch_df, left_index=True, right_index=True, how='left')
-            epoch_df = epoch_df.fillna({'firing_rate': 0.0})
-        else:
-            epoch_df = nodes_df.assign(firing_rate=[0.] * len(nodes_df))
-
-        epoch_df = epoch_df.groupby(groupby)[['firing_rate']].agg([np.mean, np.std])
-
-        return epoch_df
-
-    spike_trains = SpikeTrains.load(spikes_file)
-    spike_train_df = spike_trains.to_dataframe()
-    full_nodes_df = simulation.net.node_properties(**filterparams)
-    sim_time_ms = simulation.simulation_time(units='ms')
-    rate_df = dict()
-
+    rate_dict = dict()
     if epochs is None:
-        full_spikes_df = spike_train_df.groupby(['population', 'node_ids']).apply(
-            get_epoch_firing_rate, 0., sim_time_ms)
-        full_rate_df = get_epoch_dataframe(full_spikes_df, full_nodes_df, groupby)
-        return full_rate_df
+        rate_dict['full'] = \
+            get_firing_rates_by_cell_type(spikes_table, population, all_local_node_ids, cell_type_dict, start=0.,
+                                          stop=sim_end)
     else:
         for epoch_name, epoch_dict in epochs.items():
             if 'node_ids' in epoch_dict and len(epoch_dict['node_ids']) > 0:
-                epoch_df = spike_train_df[spike_train_df.node_ids.isin(epoch_dict['node_ids'])]
-                subset_nodes_df = full_nodes_df[full_nodes_df.index.isin(epoch_dict['node_ids'], level='node_id')]
+                this_node_ids = set(epoch_dict['node_ids']).intersection(all_local_node_ids)
             else:
-                epoch_df = spike_train_df.copy()
-                subset_nodes_df = full_nodes_df.copy()
-            epoch_df = epoch_df.groupby(['population', 'node_ids']).apply(
-                get_epoch_firing_rate, epoch_dict['start'], epoch_dict['stop'])
-            rate_df[epoch_name] = get_epoch_dataframe(epoch_df, subset_nodes_df, groupby)
+                this_node_ids = all_local_node_ids
+            rate_dict[epoch_name] = \
+                get_firing_rates_by_cell_type(spikes_table, population, this_node_ids, cell_type_dict,
+                                              start=epoch_dict['start'], stop=epoch_dict['stop'])
 
-    return rate_df
+    return rate_dict
 
 
 def get_objectives(features, export=False):
