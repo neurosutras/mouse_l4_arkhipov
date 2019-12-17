@@ -420,7 +420,7 @@ def get_local_firing_rates_by_cell_type_from_sim(simulation, population='l4', ce
     :param epochs: dict: {str: tuple of float (ms)}
     :return: dict
     """
-    def get_firing_rates_by_cell_type(spikes_table, population, node_ids, cell_type_dict, start, stop):
+    def get_firing_rates_by_cell_type(spikes_table, node_ids, cell_type_dict, start, stop):
         """
 
         """
@@ -452,8 +452,7 @@ def get_local_firing_rates_by_cell_type_from_sim(simulation, population='l4', ce
     rate_dict = dict()
     if epochs is None:
         rate_dict['all'] = \
-            get_firing_rates_by_cell_type(spikes_table, population, all_local_node_ids, cell_type_dict, start=0.,
-                                          stop=sim_end)
+            get_firing_rates_by_cell_type(spikes_table, all_local_node_ids, cell_type_dict, start=0., stop=sim_end)
     else:
         for epoch_name, epoch_dict in epochs.items():
             if 'node_ids' in epoch_dict and len(epoch_dict['node_ids']) > 0:
@@ -461,8 +460,8 @@ def get_local_firing_rates_by_cell_type_from_sim(simulation, population='l4', ce
             else:
                 this_node_ids = all_local_node_ids
             rate_dict[epoch_name] = \
-                get_firing_rates_by_cell_type(spikes_table, population, this_node_ids, cell_type_dict,
-                                              start=epoch_dict['start'], stop=epoch_dict['stop'])
+                get_firing_rates_by_cell_type(spikes_table, this_node_ids, cell_type_dict, start=epoch_dict['start'],
+                                              stop=epoch_dict['stop'])
 
     return rate_dict
 
