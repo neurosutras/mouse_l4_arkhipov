@@ -152,7 +152,7 @@ def config_worker():
             print('synapse counts per projection')
             pprint.pprint(defaultdict_to_dict(gathered_syn_count))
             sys.stdout.flush()
-            time.sleep(1.)
+            time.sleep(.1)
         context.comm.barrier()
 
     if context.comm.rank == 0:
@@ -187,7 +187,7 @@ def config_worker():
             print('Firing rate analysis epochs:')
             pprint.pprint(epochs)
             sys.stdout.flush()
-            time.sleep(1.)
+            time.sleep(.1)
     else:
         epochs = None
     epochs = context.comm.bcast(epochs, root=0)
@@ -195,7 +195,7 @@ def config_worker():
     if context.verbose > 0 and context.comm.rank == 0:
         print('optimize_L4_bionet: initialization took %.2f s' % (time.time() - start_time))
         sys.stdout.flush()
-        time.sleep(1.)
+        time.sleep(.1)
 
     context.update(locals())
 
@@ -251,7 +251,7 @@ def update_context(x, local_context=None):
         print('weight_factors:')
         pprint.pprint(local_context.weight_factors)
         sys.stdout.flush()
-        time.sleep(1.)
+        time.sleep(.1)
 
 
 def compute_features(x, export=False):
@@ -269,13 +269,13 @@ def compute_features(x, export=False):
                                    celsius=conf.celsius, nsteps_block=conf.block_step)
 
     if context.export:
-        # Attach mod to simulation that will be used to keep track of spikes.
+        # Attach mod to simulation that will record and cache spikes to disk and export to sonata format (h5).
         spikes_recorder = \
             SpikesMod(spikes_file=context.conf.output['spikes_file'], tmp_dir=context.temp_output_dir,
                       spikes_sort_order='gid', mode='w')
         sim_step.add_mod(spikes_recorder)
     else:
-        # Record spikes but do not cache to disk:
+        # Record spikes but do not cache to disk
         sim_step.set_spikes_recording()
 
     # run simulation
@@ -394,7 +394,7 @@ def get_firing_rates_by_cell_type_from_file(spikes_file, simulation, population=
 
     rate_dict = dict()
     if epochs is None:
-        rate_dict['full'] = \
+        rate_dict['all'] = \
             get_firing_rates_by_cell_type(spike_trains, population, all_node_ids, cell_type_dict, start=0.,
                                           stop=sim_end)
     else:
@@ -451,7 +451,7 @@ def get_local_firing_rates_by_cell_type_from_sim(simulation, population='l4', ce
 
     rate_dict = dict()
     if epochs is None:
-        rate_dict['full'] = \
+        rate_dict['all'] = \
             get_firing_rates_by_cell_type(spikes_table, population, all_local_node_ids, cell_type_dict, start=0.,
                                           stop=sim_end)
     else:
