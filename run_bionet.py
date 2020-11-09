@@ -141,6 +141,12 @@ def run_iteration(config_file):
 
     # Save the connections in update_weights/ folder
     weights_dir = conf.output['output_dir'] + '/' + 'updated_weights'
+
+    if comm.rank == 0:
+        if not os.path.isdir(weights_dir):
+            os.mkdir(weights_dir)
+    comm.barrier()
+
     connection_recorder = SaveSynapses(weights_dir)
     connection_recorder.initialize(sim_step)
     connection_recorder.finalize(sim_step)
