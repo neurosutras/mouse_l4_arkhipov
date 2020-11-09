@@ -1,8 +1,9 @@
 """
 Simulates a model of L4 of V1 consisting of 45,000 individual cells divided into 7 different cell-type classes.
 This script interacts with nested.optimize to find a set of parameters controlling synaptic connection strengths for
-eachscalar weight vectorsThe goal of this script is get each cell-type to have a population-averaged firing rate set in the optimization configuration file.
-n example network of 450 cell receiving two kinds of external input as defined in the configuration file"""
+each connection between diverse cell types, and aims for each cell type to hit target objectives regarding firing rate
+and stimulus selectivity derived from experimental data.
+"""
 import json
 import shutil
 import pandas as pd
@@ -29,7 +30,7 @@ context = Context()
 
 @click.command(context_settings=dict(ignore_unknown_options=True, allow_extra_args=True, ))
 @click.option("--config-file-path", type=click.Path(exists=True, file_okay=True, dir_okay=False),
-              default='config/optimize_L4_bionet_toy_config.yaml')
+              default='config/optimize_L4_bionet_config.yaml')
 @click.option("--export", is_flag=True)
 @click.option("--output-dir", type=str, default='data')
 @click.option("--export-file-path", type=str, default=None)
@@ -211,7 +212,7 @@ def run_tests():
     sys.stdout.flush()
     time.sleep(1.)
     if context.export:
-        collect_and_merge_temp_output(context.interface, context.export_file_path, verbose=context.disp)
+        merge_exported_data(context, export_file_path=context.export_file_path, verbose=context.disp)
     sys.stdout.flush()
     time.sleep(1.)
     print('params:')
