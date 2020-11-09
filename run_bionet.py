@@ -105,7 +105,8 @@ def run_iteration(config_file):
     sim.run()
 
     # Get the spike statistics of the output, using "groupby" will get averaged firing rates across each model
-    spike_stats_df = spike_statistics('output/spikes.h5', simulation=sim, group_by='model_name', populations='l4')
+    spikes_file_path = conf.output['output_dir'] + '/' + conf.output['spikes_file']
+    spike_stats_df = spike_statistics(spikes_file_path, simulation=sim, group_by='model_name', populations='l4')
 
     # Calculate gradients
     gradients, mse = get_grads(spike_stats_df, target_frs)
@@ -123,14 +124,15 @@ def run_iteration(config_file):
                                        celsius=conf.celsius, nsteps_block=conf.block_step)
 
         # Attach mod to simulation that will be used to keep track of spikes.
-        spikes_recorder = SpikesMod(spikes_file='spikes.h5', tmp_dir='output', spikes_sort_order='gid', mode='w')
+        spikes_recorder = SpikesMod(spikes_file=conf.output['spikes_file'],
+                                    tmp_dir=conf.output['output_dir'], spikes_sort_order='gid', mode='w')
         sim_step.add_mod(spikes_recorder)
 
         # run simulation
         sim_step.run()
 
         # Get latest spiking statistics, calcuate gradients and update the weights
-        spike_stats_df = spike_statistics('output/spikes.h5', simulation=sim, group_by='model_name', populations='l4')
+        spike_stats_df = spike_statistics(spikes_file_path, simulation=sim, group_by='model_name', populations='l4')
         gradients, mse = get_grads(spike_stats_df, target_frs)
         update_syn_weights(graph, gradients)
         rates_table = update_rates_table(rates_table, spike_stats_df, mse)
