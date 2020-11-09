@@ -117,7 +117,9 @@ def config_worker():
     conf = bionet.Config.from_dict(bionet_config_dict, validate=True)
     conf.build_env()
 
+
     spikes_file_path = conf.output['output_dir'] + '/' + conf.output['spikes_file']
+    print(spikes_file_path)
 
     # construct network using config.json params
     graph = bionet.BioNetwork.from_config(conf)

@@ -107,7 +107,7 @@ def run_iteration(config_file):
     # Get the spike statistics of the output, using "group_by" will get averaged firing rates across each model
     spikes_file_path = conf.output['spikes_file']
     spikes_file_name = spikes_file_path.split('/')[-1]
-    spike_stats_df = spike_statistics(conf.output['spikes_file'], simulation=sim, group_by='model_name',
+    spike_stats_df = spike_statistics(spikes_file_path, simulation=sim, group_by='model_name',
                                       populations='l4')
 
     # Calculate gradients
@@ -140,7 +140,8 @@ def run_iteration(config_file):
         rates_table = update_rates_table(rates_table, spike_stats_df, mse)
 
     # Save the connections in update_weights/ folder
-    connection_recorder = SaveSynapses('updated_weights')
+    weights_dir = conf.output['output_dir'] + '/' + 'updated_weights'
+    connection_recorder = SaveSynapses(weights_dir)
     connection_recorder.initialize(sim_step)
     connection_recorder.finalize(sim_step)
     comm.barrier()
