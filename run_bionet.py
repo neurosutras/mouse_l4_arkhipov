@@ -104,9 +104,11 @@ def run_iteration(config_file):
     sim = bionet.BioSimulator.from_config(conf, network=graph)
     sim.run()
 
-    # Get the spike statistics of the output, using "groupby" will get averaged firing rates across each model
-    spikes_file_path = conf.output['output_dir'] + '/' + conf.output['spikes_file']
-    spike_stats_df = spike_statistics(spikes_file_path, simulation=sim, group_by='model_name', populations='l4')
+    # Get the spike statistics of the output, using "group_by" will get averaged firing rates across each model
+    spikes_file_path = conf.output['spikes_file']
+    spikes_file_name = spikes_file_path.split('/')[-1]
+    spike_stats_df = spike_statistics(conf.output['spikes_file'], simulation=sim, group_by='model_name',
+                                      populations='l4')
 
     # Calculate gradients
     gradients, mse = get_grads(spike_stats_df, target_frs)
@@ -124,7 +126,7 @@ def run_iteration(config_file):
                                        celsius=conf.celsius, nsteps_block=conf.block_step)
 
         # Attach mod to simulation that will be used to keep track of spikes.
-        spikes_recorder = SpikesMod(spikes_file=conf.output['spikes_file'],
+        spikes_recorder = SpikesMod(spikes_file=spikes_file_name,
                                     tmp_dir=conf.output['output_dir'], spikes_sort_order='gid', mode='w')
         sim_step.add_mod(spikes_recorder)
 
