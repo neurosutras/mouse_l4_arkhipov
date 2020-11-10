@@ -139,15 +139,8 @@ def run_iteration(config_file):
         update_syn_weights(graph, gradients)
         rates_table = update_rates_table(rates_table, spike_stats_df, mse)
 
-    # Save the connections in update_weights/ folder
-    weights_dir = conf.output['output_dir'] + '/' + 'updated_weights'
-
-    if comm.rank == 0:
-        if not os.path.isdir(weights_dir):
-            os.mkdir(weights_dir)
-    comm.barrier()
-
-    connection_recorder = SaveSynapses(weights_dir)
+    # Save the connections and weights
+    connection_recorder = SaveSynapses(conf.output['output_dir'])
     connection_recorder.initialize(sim_step)
     connection_recorder.finalize(sim_step)
     comm.barrier()

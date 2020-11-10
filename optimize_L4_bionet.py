@@ -16,7 +16,6 @@ from collections import defaultdict
 from distutils.dir_util import copy_tree
 
 from bmtk.simulator import bionet
-from bmtk.simulator.bionet.nrn import synaptic_weight
 from bmtk.simulator.bionet.modules import SaveSynapses, SpikesMod
 from bmtk.utils.io import ioutils
 from bmtk.utils.reports import SpikeTrains
@@ -30,7 +29,7 @@ context = Context()
 
 @click.command(context_settings=dict(ignore_unknown_options=True, allow_extra_args=True, ))
 @click.option("--config-file-path", type=click.Path(exists=True, file_okay=True, dir_okay=False),
-              default='config/optimize_L4_bionet_config.yaml')
+              default='config/optimize_L4_bionet_toy_config.yaml')
 @click.option("--export", is_flag=True)
 @click.option("--output-dir", type=str, default='data')
 @click.option("--export-file-path", type=str, default=None)
@@ -70,6 +69,7 @@ def main(cli, config_file_path, export, output_dir, export_file_path, label, int
     config_optimize_interactive(__file__, config_file_path=config_file_path, output_dir=output_dir, export=export,
                                 export_file_path=export_file_path, label=label, disp=context.disp,
                                 interface=context.interface, verbose=verbose, plot=plot, debug=debug, **kwargs)
+
     if simulate:
         run_tests()
 
@@ -117,9 +117,8 @@ def config_worker():
     conf = bionet.Config.from_dict(bionet_config_dict, validate=True)
     conf.build_env()
 
-
-    spikes_file_path = conf.output['output_dir'] + '/' + conf.output['spikes_file']
-    print(spikes_file_path)
+    spikes_file_path = conf.output['spikes_file']
+    spikes_file_name = spikes_file_path.split('/')[-1]
 
     # construct network using config.json params
     graph = bionet.BioNetwork.from_config(conf)
@@ -204,19 +203,23 @@ def config_worker():
 
 
 def run_tests():
-    features = context.interface.execute(compute_features, context.x0_array, context.export)
+
+    model_id = 0
+    if 'model_key' in context() and context.model_key is not None:
+        model_label = context.model_key
+    else:
+        model_label = 'test'
+
+    features = context.interface.execute(compute_features, context.x0_array, model_id, context.export)
     sys.stdout.flush()
     time.sleep(1.)
     if len(features) > 0:
-        features, objectives = context.interface.execute(get_objectives, features)
+        features, objectives = context.interface.execute(get_objectives, features, model_id, context.export)
     else:
         objectives = dict()
     sys.stdout.flush()
     time.sleep(1.)
-    if context.export:
-        merge_exported_data(context, export_file_path=context.export_file_path, verbose=context.disp)
-    sys.stdout.flush()
-    time.sleep(1.)
+
     print('params:')
     pprint.pprint(context.x0_dict)
     print('features:')
@@ -225,7 +228,9 @@ def run_tests():
     pprint.pprint(objectives)
     sys.stdout.flush()
     time.sleep(1.)
+
     context.interface.execute(shutdown_worker)
+
     context.update(locals())
 
 
@@ -257,10 +262,11 @@ def update_context(x, local_context=None):
         time.sleep(.1)
 
 
-def compute_features(x, export=False):
+def compute_features(x, model_id=None, export=False):
     """
 
     :param x: array
+    :param model_id: int
     :param export: bool
     :return: dict
     """
@@ -274,7 +280,7 @@ def compute_features(x, export=False):
     if context.export:
         # Attach mod to simulation that will record and cache spikes to disk and export to sonata format (h5).
         spikes_recorder = \
-            SpikesMod(spikes_file=context.conf.output['spikes_file'], tmp_dir=context.temp_output_dir,
+            SpikesMod(spikes_file=context.spikes_file_name, tmp_dir=context.temp_output_dir,
                       spikes_sort_order='gid', mode='w')
         sim_step.add_mod(spikes_recorder)
     else:
@@ -285,13 +291,14 @@ def compute_features(x, export=False):
     sim_step.run()
 
     if context.verbose > 1 and context.comm.rank == 0:
-        print('optimize_L4_bionet: pid: %i; simulation with x: %s took %.2f s' %
-              (os.getpid(), str(list(x)), time.time() - start_time))
+        print('optimize_L4_bionet: pid: %i; model_id: %i; simulation took %.2f s' %
+              (os.getpid(), model_id, time.time() - start_time))
         sys.stdout.flush()
         time.sleep(.1)
 
     if export:
         export_dir = context.export_file_path.replace('.hdf5', '')
+        export_dir = context.comm.bcast(export_dir, root=0)
         if context.comm.rank == 0:
             if not os.path.isdir(export_dir):
                 os.mkdir(export_dir)
@@ -303,8 +310,8 @@ def compute_features(x, export=False):
         connection_recorder.initialize(sim_step)
         connection_recorder.finalize(sim_step)
         if context.verbose > 1 and context.comm.rank == 0:
-            print('optimize_L4_bionet: pid: %i; exporting connection weights with x: %s took %.2f s' %
-                  (os.getpid(), str(list(x)), time.time() - start_time))
+            print('optimize_L4_bionet: pid: %i; model_id: %i; exporting connection weights took %.2f s' %
+                  (os.getpid(), model_id, time.time() - start_time))
             sys.stdout.flush()
             time.sleep(.1)
         context.comm.barrier()
@@ -347,8 +354,8 @@ def compute_features(x, export=False):
                 results[feature_name] = rate_val
 
         if context.verbose > 1:
-            print('optimize_L4_bionet: pid: %i; analysis with x: %s took %.2f s' %
-                  (os.getpid(), str(list(x)), time.time() - start_time))
+            print('optimize_L4_bionet: pid: %i; model_id: %i; analysis took %.2f s' %
+                  (os.getpid(), model_id, time.time() - start_time))
             sys.stdout.flush()
             time.sleep(.1)
 
@@ -469,10 +476,11 @@ def get_local_firing_rates_by_cell_type_from_sim(simulation, population='l4', ce
     return rate_dict
 
 
-def get_objectives(features, export=False):
+def get_objectives(features, model_id=None, export=False):
     """
 
     :param features: dict
+    :param model_id: int
     :param export: bool
     :return: tuple of dict
     """
