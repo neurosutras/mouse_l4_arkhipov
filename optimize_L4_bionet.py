@@ -175,13 +175,13 @@ def config_worker():
         epochs = {'spont_rate': {'start': 0.,
                                  'stop': 500.,},
                   'grating_rate': {'start': 500.,
-                                   'stop': 1000.,
+                                   'stop': 1500.,
                                    'node_ids': node_ids['grating_rate']},
                   'grating_pref_rate': {'start': 500.,
-                                        'stop': 1000.,
+                                        'stop': 1500.,
                                         'node_ids': node_ids['grating_pref_rate']},
                   'grating_ortho_rate': {'start': 500.,
-                                        'stop': 1000.,
+                                        'stop': 1500.,
                                         'node_ids': node_ids['grating_ortho_rate']}
                   }
 
