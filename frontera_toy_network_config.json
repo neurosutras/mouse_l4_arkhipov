@@ -8,7 +8,7 @@
   },
 
   "run": {
-    "tstop": 1000.0,
+    "tstop": 1500.0,
     "dt": 0.1,
     "dL": 20.0,
     "spike_threshold": -15,
