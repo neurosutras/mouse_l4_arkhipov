@@ -31,7 +31,7 @@ context = Context()
 @click.option("--config-file-path", type=click.Path(exists=True, file_okay=True, dir_okay=False),
               default='config/optimize_L4_bionet_toy_config.yaml')
 @click.option("--export", is_flag=True)
-@click.option("--output-dir", type=str, default='data')
+@click.option("--output-dir", type=str, default='output')
 @click.option("--export-file-path", type=str, default=None)
 @click.option("--label", type=str, default=None)
 @click.option("--interactive", is_flag=True)
@@ -77,6 +77,7 @@ def main(cli, config_file_path, export, output_dir, export_file_path, label, int
         context.interface.apply(plt.show)
 
     if not interactive:
+        context.interface.execute(shutdown_worker)
         context.interface.stop()
 
 
@@ -90,6 +91,8 @@ def config_worker():
         context.verbose = int(context.verbose)
     if 'debug' not in context():
         context.debug = False
+    if 'export_connections' not in context():
+        context.export_connections = False
     start_time = time.time()
 
     temp_output_dir = context.temp_output_path.replace('.hdf5', '')
@@ -304,7 +307,7 @@ def compute_features(x, model_id=None, export=False):
                 os.mkdir(export_dir)
         context.comm.barrier()
 
-    if export and not context.debug:
+    if export and context.export_connections:
         start_time = time.time()
         connection_recorder = SaveSynapses(export_dir)
         connection_recorder.initialize(sim_step)

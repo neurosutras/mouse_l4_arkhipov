@@ -1,67 +1,67 @@
 bounds:
   weight_factor.LIF_exc.l4_i: !!python/tuple
-    - 0.1
-    - 10.
+    - 0.2
+    - 5.
   weight_factor.LIF_inh.l4_i: !!python/tuple
-    - 0.1
-    - 10.
+    - 0.2
+    - 5.
   weight_factor.Nr5a1.l4_i: !!python/tuple
-    - 0.1
-    - 10.
+    - 0.2
+    - 5.
   weight_factor.PV1.l4_i: !!python/tuple
-    - 0.1
-    - 10.
+    - 0.2
+    - 5.
   weight_factor.PV2.l4_i: !!python/tuple
-    - 0.1
-    - 10.
+    - 0.2
+    - 5.
   weight_factor.Rorb.l4_i: !!python/tuple
-    - 0.1
-    - 10.
+    - 0.2
+    - 5.
   weight_factor.Scnn1a.l4_i: !!python/tuple
-    - 0.1
-    - 10.
+    - 0.2
+    - 5.
   weight_factor.LIF_exc.l4_e: !!python/tuple
-    - 0.1
-    - 10.
+    - 0.2
+    - 5.
   weight_factor.LIF_inh.l4_e: !!python/tuple
-    - 0.1
-    - 10.
+    - 0.2
+    - 5.
   weight_factor.Nr5a1.l4_e: !!python/tuple
-    - 0.1
-    - 10.
+    - 0.2
+    - 5.
   weight_factor.PV1.l4_e: !!python/tuple
-    - 0.1
-    - 10.
+    - 0.2
+    - 5.
   weight_factor.PV2.l4_e: !!python/tuple
-    - 0.1
-    - 10.
+    - 0.2
+    - 5.
   weight_factor.Rorb.l4_e: !!python/tuple
-    - 0.1
-    - 10.
+    - 0.2
+    - 5.
   weight_factor.Scnn1a.l4_e: !!python/tuple
-    - 0.1
-    - 10.
+    - 0.2
+    - 5.
   weight_factor.LIF_exc.ext: !!python/tuple
-    - 0.1
-    - 10.
+    - 0.2
+    - 5.
   weight_factor.LIF_inh.ext: !!python/tuple
-    - 0.1
-    - 10.
+    - 0.2
+    - 5.
   weight_factor.Nr5a1.ext: !!python/tuple
-    - 0.1
-    - 10.
+    - 0.2
+    - 5.
   weight_factor.PV1.ext: !!python/tuple
-    - 0.1
-    - 10.
+    - 0.2
+    - 5.
   weight_factor.PV2.ext: !!python/tuple
-    - 0.1
-    - 10.
+    - 0.2
+    - 5.
   weight_factor.Rorb.ext: !!python/tuple
-    - 0.1
-    - 10.
+    - 0.2
+    - 5.
   weight_factor.Scnn1a.ext: !!python/tuple
-    - 0.1
-    - 10.
+    - 0.2
+    - 5.
 rel_bounds:
 feature_names:
 - spont_rate.LIF_exc
@@ -106,7 +106,8 @@ kwargs:
       - Scnn1a
     ext:
       - tw
-      - lgn
+      # - lgn
+  export_connections: False
 objective_names:
 - spont_rate.LIF_exc
 - spont_rate.LIF_inh
@@ -178,16 +179,16 @@ target_val:
   spont_rate.Rorb: 3.0010052631578943
   spont_rate.Scnn1a: 3.0010052631578943
   grating_pref_rate.LIF_exc: 7.143484210526316
-  grating_ortho_rate.LIF_exc: 2.3499828590277105
+  grating_ortho_rate.LIF_exc: 1.428696842105263
   grating_rate.LIF_inh: 8.59714705882353
   grating_pref_rate.Nr5a1: 7.143484210526316
-  grating_ortho_rate.Nr5a1: 2.3499828590277105
+  grating_ortho_rate.Nr5a1: 1.428696842105263
   grating_rate.PV1: 8.59714705882353
   grating_rate.PV2: 8.59714705882353
   grating_pref_rate.Rorb: 7.143484210526316
-  grating_ortho_rate.Rorb: 2.3499828590277105
+  grating_ortho_rate.Rorb: 1.428696842105263
   grating_pref_rate.Scnn1a: 7.143484210526316
-  grating_ortho_rate.Scnn1a: 2.3499828590277105
+  grating_ortho_rate.Scnn1a: 1.428696842105263
 x0:
   weight_factor.LIF_exc.l4_i: 1.
   weight_factor.LIF_inh.l4_i: 1.
@@ -196,17 +197,17 @@ x0:
   weight_factor.PV2.l4_i: 1.
   weight_factor.Rorb.l4_i: 1.
   weight_factor.Scnn1a.l4_i: 1.
-  weight_factor.LIF_exc.l4_e: 0.1
-  weight_factor.LIF_inh.l4_e: 0.1
-  weight_factor.Nr5a1.l4_e: 0.1
-  weight_factor.PV1.l4_e: 0.1
-  weight_factor.PV2.l4_e: 0.1
-  weight_factor.Rorb.l4_e: 0.1
-  weight_factor.Scnn1a.l4_e: 0.1
-  weight_factor.LIF_exc.ext: 0.1
+  weight_factor.LIF_exc.l4_e: 1.
+  weight_factor.LIF_inh.l4_e: 1.
+  weight_factor.Nr5a1.l4_e: 1.
+  weight_factor.PV1.l4_e: 1.
+  weight_factor.PV2.l4_e: 1.
+  weight_factor.Rorb.l4_e: 1.
+  weight_factor.Scnn1a.l4_e: 1.
+  weight_factor.LIF_exc.ext: 1.
   weight_factor.LIF_inh.ext: 1.
-  weight_factor.Nr5a1.ext: 0.1
-  weight_factor.PV1.ext: 0.1
-  weight_factor.PV2.ext: 0.1
-  weight_factor.Rorb.ext: 0.1
-  weight_factor.Scnn1a.ext: 0.1
+  weight_factor.Nr5a1.ext: 1.
+  weight_factor.PV1.ext: 1.
+  weight_factor.PV2.ext: 1.
+  weight_factor.Rorb.ext: 1.
+  weight_factor.Scnn1a.ext: 1.
