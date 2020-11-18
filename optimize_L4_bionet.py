@@ -280,7 +280,7 @@ def compute_features(x, model_id=None, export=False):
     sim_step = bionet.BioSimulator(network=context.graph, dt=conf.dt, tstop=conf.tstop, v_init=conf.v_init,
                                    celsius=conf.celsius, nsteps_block=conf.block_step)
 
-    if context.export:
+    if export:
         # Attach mod to simulation that will record and cache spikes to disk and export to sonata format (h5).
         spikes_recorder = \
             SpikesMod(spikes_file=context.spikes_file_name, tmp_dir=context.temp_output_dir,
