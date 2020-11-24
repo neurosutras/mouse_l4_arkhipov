@@ -490,8 +490,9 @@ def get_objectives(features, model_id=None, export=False):
     if context.comm.rank == 0:
         objectives = {}
         for objective_name in context.objective_names:
-            objectives[objective_name] = ((context.target_val[objective_name] - features[objective_name]) /
-                                          context.target_range[objective_name]) ** 2.
+            objectives[objective_name] = \
+                ((context.target_val[objective_name] - features[objective_name]) /
+                 (context.target_range[objective_name] * context.target_val[objective_name])) ** 2.
         return features, objectives
 
 

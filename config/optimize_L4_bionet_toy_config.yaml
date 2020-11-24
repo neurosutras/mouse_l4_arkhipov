@@ -41,27 +41,6 @@ bounds:
   weight_factor.Scnn1a.l4_e: !!python/tuple
     - 0.2
     - 5.
-  weight_factor.LIF_exc.ext: !!python/tuple
-    - 0.2
-    - 5.
-  weight_factor.LIF_inh.ext: !!python/tuple
-    - 0.2
-    - 5.
-  weight_factor.Nr5a1.ext: !!python/tuple
-    - 0.2
-    - 5.
-  weight_factor.PV1.ext: !!python/tuple
-    - 0.2
-    - 5.
-  weight_factor.PV2.ext: !!python/tuple
-    - 0.2
-    - 5.
-  weight_factor.Rorb.ext: !!python/tuple
-    - 0.2
-    - 5.
-  weight_factor.Scnn1a.ext: !!python/tuple
-    - 0.2
-    - 5.
 rel_bounds:
 feature_names:
 - spont_rate.LIF_exc
@@ -106,7 +85,7 @@ kwargs:
       - Scnn1a
     ext:
       - tw
-      # - lgn
+      - lgn
   export_connections: False
 objective_names:
 - spont_rate.LIF_exc
@@ -144,32 +123,25 @@ param_names:
 - weight_factor.PV2.l4_e
 - weight_factor.Rorb.l4_e
 - weight_factor.Scnn1a.l4_e
-- weight_factor.LIF_exc.ext
-- weight_factor.LIF_inh.ext
-- weight_factor.Nr5a1.ext
-- weight_factor.PV1.ext
-- weight_factor.PV2.ext
-- weight_factor.Rorb.ext
-- weight_factor.Scnn1a.ext
 target_range:
-  spont_rate.LIF_exc: 0.1
-  spont_rate.LIF_inh: 0.1
-  spont_rate.Nr5a1: 0.1
-  spont_rate.PV1: 0.1
-  spont_rate.PV2: 0.1
-  spont_rate.Rorb: 0.1
-  spont_rate.Scnn1a: 0.1
-  grating_pref_rate.LIF_exc: 0.1
-  grating_ortho_rate.LIF_exc: 0.1
-  grating_rate.LIF_inh: 0.1
-  grating_pref_rate.Nr5a1: 0.1
-  grating_ortho_rate.Nr5a1: 0.1
-  grating_rate.PV1: 0.1
-  grating_rate.PV2: 0.1
-  grating_pref_rate.Rorb: 0.1
-  grating_ortho_rate.Rorb: 0.1
-  grating_pref_rate.Scnn1a: 0.1
-  grating_ortho_rate.Scnn1a: 0.1
+  spont_rate.LIF_exc: 0.05
+  spont_rate.LIF_inh: 0.05
+  spont_rate.Nr5a1: 0.05
+  spont_rate.PV1: 0.05
+  spont_rate.PV2: 0.05
+  spont_rate.Rorb: 0.05
+  spont_rate.Scnn1a: 0.05
+  grating_pref_rate.LIF_exc: 0.05
+  grating_ortho_rate.LIF_exc: 0.05
+  grating_rate.LIF_inh: 0.05
+  grating_pref_rate.Nr5a1: 0.05
+  grating_ortho_rate.Nr5a1: 0.05
+  grating_rate.PV1: 0.05
+  grating_rate.PV2: 0.05
+  grating_pref_rate.Rorb: 0.05
+  grating_ortho_rate.Rorb: 0.05
+  grating_pref_rate.Scnn1a: 0.05
+  grating_ortho_rate.Scnn1a: 0.05
 target_val:
   spont_rate.LIF_exc: 3.0010052631578943
   spont_rate.LIF_inh: 2.506888235294118
@@ -189,7 +161,7 @@ target_val:
   grating_ortho_rate.Rorb: 1.428696842105263
   grating_pref_rate.Scnn1a: 7.143484210526316
   grating_ortho_rate.Scnn1a: 1.428696842105263
-x0:
+x0_orig:
   weight_factor.LIF_exc.l4_i: 1.
   weight_factor.LIF_inh.l4_i: 1.
   weight_factor.Nr5a1.l4_i: 1.
@@ -204,10 +176,3 @@ x0:
   weight_factor.PV2.l4_e: 1.
   weight_factor.Rorb.l4_e: 1.
   weight_factor.Scnn1a.l4_e: 1.
-  weight_factor.LIF_exc.ext: 1.
-  weight_factor.LIF_inh.ext: 1.
-  weight_factor.Nr5a1.ext: 1.
-  weight_factor.PV1.ext: 1.
-  weight_factor.PV2.ext: 1.
-  weight_factor.Rorb.ext: 1.
-  weight_factor.Scnn1a.ext: 1.
