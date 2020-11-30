@@ -1,0 +1,30 @@
+orig:
+  weight_factor.LIF_exc.l4_i: 1.
+  weight_factor.LIF_inh.l4_i: 1.
+  weight_factor.Nr5a1.l4_i: 1.
+  weight_factor.PV1.l4_i: 1.
+  weight_factor.PV2.l4_i: 1.
+  weight_factor.Rorb.l4_i: 1.
+  weight_factor.Scnn1a.l4_i: 1.
+  weight_factor.LIF_exc.l4_e: 1.
+  weight_factor.LIF_inh.l4_e: 1.
+  weight_factor.Nr5a1.l4_e: 1.
+  weight_factor.PV1.l4_e: 1.
+  weight_factor.PV2.l4_e: 1.
+  weight_factor.Rorb.l4_e: 1.
+  weight_factor.Scnn1a.l4_e: 1.
+20201130:
+  weight_factor.LIF_exc.l4_e: 8.589246E-01
+  weight_factor.LIF_exc.l4_i: 1.773984E+00
+  weight_factor.LIF_inh.l4_e: 9.340684E-01
+  weight_factor.LIF_inh.l4_i: 9.855412E-01
+  weight_factor.Nr5a1.l4_e: 7.767998E-01
+  weight_factor.Nr5a1.l4_i: 1.847262E+00
+  weight_factor.PV1.l4_e: 1.138663E+00
+  weight_factor.PV1.l4_i: 4.141429E+00
+  weight_factor.PV2.l4_e: 1.191506E+00
+  weight_factor.PV2.l4_i: 3.942778E+00
+  weight_factor.Rorb.l4_e: 1.188001E+00
+  weight_factor.Rorb.l4_i: 3.067852E+00
+  weight_factor.Scnn1a.l4_e: 4.913975E-01
+  weight_factor.Scnn1a.l4_i: 1.207832E+00
