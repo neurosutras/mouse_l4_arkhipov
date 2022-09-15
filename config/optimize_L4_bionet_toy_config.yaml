@@ -1,44 +1,44 @@
 bounds:
-  weight_factor.LIF_exc.l4_i: !!python/tuple
+  weight_factor.LIF_exc.l4_i:
     - 0.2
     - 5.
-  weight_factor.LIF_inh.l4_i: !!python/tuple
+  weight_factor.LIF_inh.l4_i:
     - 0.2
     - 5.
-  weight_factor.Nr5a1.l4_i: !!python/tuple
+  weight_factor.Nr5a1.l4_i:
     - 0.2
     - 5.
-  weight_factor.PV1.l4_i: !!python/tuple
+  weight_factor.PV1.l4_i:
     - 0.2
     - 5.
-  weight_factor.PV2.l4_i: !!python/tuple
+  weight_factor.PV2.l4_i:
     - 0.2
     - 5.
-  weight_factor.Rorb.l4_i: !!python/tuple
+  weight_factor.Rorb.l4_i:
     - 0.2
     - 5.
-  weight_factor.Scnn1a.l4_i: !!python/tuple
+  weight_factor.Scnn1a.l4_i:
     - 0.2
     - 5.
-  weight_factor.LIF_exc.l4_e: !!python/tuple
+  weight_factor.LIF_exc.l4_e:
     - 0.2
     - 5.
-  weight_factor.LIF_inh.l4_e: !!python/tuple
+  weight_factor.LIF_inh.l4_e:
     - 0.2
     - 5.
-  weight_factor.Nr5a1.l4_e: !!python/tuple
+  weight_factor.Nr5a1.l4_e:
     - 0.2
     - 5.
-  weight_factor.PV1.l4_e: !!python/tuple
+  weight_factor.PV1.l4_e:
     - 0.2
     - 5.
-  weight_factor.PV2.l4_e: !!python/tuple
+  weight_factor.PV2.l4_e:
     - 0.2
     - 5.
-  weight_factor.Rorb.l4_e: !!python/tuple
+  weight_factor.Rorb.l4_e:
     - 0.2
     - 5.
-  weight_factor.Scnn1a.l4_e: !!python/tuple
+  weight_factor.Scnn1a.l4_e:
     - 0.2
     - 5.
 rel_bounds:
@@ -62,13 +62,12 @@ feature_names:
 - grating_pref_rate.Scnn1a
 - grating_ortho_rate.Scnn1a
 update_context:
-- - optimize_L4_bionet
-  - update_context
-get_features_stages:
+- source: optimize_L4_bionet
+  function: update_context
+stages:
 - source: optimize_L4_bionet
   compute_features: compute_features
-get_objectives:
-  optimize_L4_bionet: get_objectives
+  get_objectives: get_objectives
 kwargs:
   verbose: 2
   bionet_config_file_path: toy_network_config.json
@@ -107,22 +106,6 @@ objective_names:
 - grating_pref_rate.Scnn1a
 - grating_ortho_rate.Scnn1a
 optimization_title: L4_bionet_toy
-param_gen: PopulationAnnealing
-param_names:
-- weight_factor.LIF_exc.l4_i
-- weight_factor.LIF_inh.l4_i
-- weight_factor.Nr5a1.l4_i
-- weight_factor.PV1.l4_i
-- weight_factor.PV2.l4_i
-- weight_factor.Rorb.l4_i
-- weight_factor.Scnn1a.l4_i
-- weight_factor.LIF_exc.l4_e
-- weight_factor.LIF_inh.l4_e
-- weight_factor.Nr5a1.l4_e
-- weight_factor.PV1.l4_e
-- weight_factor.PV2.l4_e
-- weight_factor.Rorb.l4_e
-- weight_factor.Scnn1a.l4_e
 target_range:
   spont_rate.LIF_exc: 0.05
   spont_rate.LIF_inh: 0.05
@@ -161,7 +144,7 @@ target_val:
   grating_ortho_rate.Rorb: 1.428696842105263
   grating_pref_rate.Scnn1a: 7.143484210526316
   grating_ortho_rate.Scnn1a: 1.428696842105263
-x0_orig:
+x0:
   weight_factor.LIF_exc.l4_i: 1.
   weight_factor.LIF_inh.l4_i: 1.
   weight_factor.Nr5a1.l4_i: 1.

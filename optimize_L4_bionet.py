@@ -8,12 +8,19 @@ import json
 import shutil
 import pandas as pd
 import click
+import time
+import sys
+import os
 
-from nested.parallel import *
-from nested.optimize_utils import *
+from nested.parallel import get_parallel_interface
+from nested.optimize_utils import Context, nested_analyze_init_contexts_interactive, merge_exported_data, \
+    update_source_contexts, get_unknown_click_arg_dict, param_array_to_dict, print_param_dict_like_yaml
+from mpi4py import MPI
 from neuron import h
 from collections import defaultdict
 from distutils.dir_util import copy_tree
+import numpy as np
+import matplotlib.pyplot as plt
 
 from bmtk.simulator import bionet
 from bmtk.simulator.bionet.modules import SaveSynapses, SpikesMod
@@ -63,18 +70,18 @@ def main(cli, config_file_path, export, output_dir, export_file_path, label, int
     if 'procs_per_worker' not in kwargs:
         kwargs['procs_per_worker'] = int(MPI.COMM_WORLD.size)
 
-    context.interface = get_parallel_interface(source_file=__file__, source_package=__package__, **kwargs)
+    context.interface = get_parallel_interface(**kwargs)
     context.interface.start(disp=context.disp)
     context.interface.ensure_controller()
-    config_optimize_interactive(__file__, config_file_path=config_file_path, output_dir=output_dir, export=export,
-                                export_file_path=export_file_path, label=label, disp=context.disp,
-                                interface=context.interface, verbose=verbose, plot=plot, debug=debug, **kwargs)
+    nested_analyze_init_contexts_interactive(context, config_file_path=config_file_path, output_dir=output_dir,
+                                             export=export, export_file_path=export_file_path, label=label,
+                                             disp=context.disp, verbose=verbose, plot=plot, debug=debug, **kwargs)
 
     if simulate:
         run_tests()
 
-    if context.plot:
-        context.interface.apply(plt.show)
+    if plot:
+        context.interface.show()
 
     if not interactive:
         context.interface.execute(shutdown_worker)
@@ -208,12 +215,8 @@ def config_worker():
 def run_tests():
 
     model_id = 0
-    if 'model_key' in context() and context.model_key is not None:
-        model_label = context.model_key
-    else:
-        model_label = 'test'
 
-    features = context.interface.execute(compute_features, context.x0_array, model_id, context.export)
+    features = context.interface.execute(compute_features, context.x0_array, model_id, context.export, context.plot)
     sys.stdout.flush()
     time.sleep(1.)
     if len(features) > 0:
@@ -223,14 +226,20 @@ def run_tests():
     sys.stdout.flush()
     time.sleep(1.)
 
+    if 'model_key' in context() and context.model_key is not None:
+        model_label = context.model_key
+    else:
+        model_label = 'x0'
+
+    print('model_id: %i; model_labels: %s' % (model_id, model_label))
     print('params:')
-    pprint.pprint(context.x0_dict)
+    print_param_dict_like_yaml(context.x0_dict)
     print('features:')
-    pprint.pprint(features)
+    print_param_dict_like_yaml(features)
     print('objectives:')
-    pprint.pprint(objectives)
+    print_param_dict_like_yaml(objectives)
     sys.stdout.flush()
-    time.sleep(1.)
+    time.sleep(.1)
 
     context.interface.execute(shutdown_worker)
 
@@ -265,12 +274,13 @@ def update_context(x, local_context=None):
         time.sleep(.1)
 
 
-def compute_features(x, model_id=None, export=False):
+def compute_features(x, model_id=None, export=False, plot=False):
     """
 
     :param x: array
     :param model_id: int
     :param export: bool
+    :param plot: bool
     :return: dict
     """
     update_source_contexts(x, context)
@@ -479,12 +489,13 @@ def get_local_firing_rates_by_cell_type_from_sim(simulation, population='l4', ce
     return rate_dict
 
 
-def get_objectives(features, model_id=None, export=False):
+def get_objectives(features, model_id=None, export=False, plot=False):
     """
 
     :param features: dict
     :param model_id: int
     :param export: bool
+    :param plot: bool
     :return: tuple of dict
     """
     if context.comm.rank == 0:
@@ -535,5 +546,4 @@ def shutdown_worker():
 
 
 if __name__ == '__main__':
-    main(args=sys.argv[(list_find(lambda s: s.find(os.path.basename(__file__)) != -1, sys.argv) + 1):],
-         standalone_mode=False)
+    main(standalone_mode=False)
