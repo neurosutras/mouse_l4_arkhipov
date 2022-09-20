@@ -15,7 +15,7 @@ sbatch <<EOT
 
 set -x
 
-cd $WORK/mouse_l4_arkhipov
+cd $WORK2/mouse_l4_arkhipov
 
 ibrun -n 224 python3 -m nested.analyze \
     --config-file-path=config/optimize_L4_bionet_config.yaml --disp \
