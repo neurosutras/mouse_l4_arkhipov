@@ -74,8 +74,8 @@ def main(cli, config_file_path, export, output_dir, export_file_path, label, int
     context.interface.start(disp=context.disp)
     context.interface.ensure_controller()
     nested_analyze_init_contexts_interactive(context, config_file_path=config_file_path, output_dir=output_dir,
-                                             export=export, export_file_path=export_file_path, label=label,
-                                             disp=context.disp, verbose=verbose, plot=plot, debug=debug, **kwargs)
+                                             export=export, label=label, disp=context.disp, verbose=verbose, plot=plot,
+                                             debug=debug, **kwargs)
 
     if simulate:
         run_tests()
@@ -84,7 +84,6 @@ def main(cli, config_file_path, export, output_dir, export_file_path, label, int
         context.interface.show()
 
     if not interactive:
-        context.interface.execute(shutdown_worker)
         context.interface.stop()
 
 
@@ -102,12 +101,26 @@ def config_worker():
         context.export_connections = False
     start_time = time.time()
 
-    temp_output_dir = context.temp_output_path.replace('.hdf5', '')
-    temp_output_dir = context.comm.bcast(temp_output_dir, root=0)
+    export_dir = None
     if context.comm.rank == 0:
         if not os.path.isdir(context.output_dir):
             os.mkdir(context.output_dir)
-        os.mkdir(temp_output_dir)
+
+        output_dir_str = context.output_dir + '/'
+        if context.label is not None:
+            label_str = '_%s' % context.label
+        else:
+            label_str = ''
+
+        if 'export_dir' not in context() or context.export_dir is None:
+            timestamp = datetime.datetime.today().strftime('%Y%m%d_%H%M%S')
+            export_dir = '%s%s_nested_exported_output%s%s_%i' % \
+                         (output_dir_str, timestamp, optimization_title_str, label_str, uuid.uuid1())
+        else:
+            export_dir = context.export_dir
+        if not os.path.isdir(export_dir):
+            os.mkdir(export_dir)
+    export_dir = context.comm.bcast(export_dir, root=0)
 
     ioutils.set_world_comm(context.comm)
     if context.comm != ioutils.bmtk_world_comm.comm:
@@ -119,7 +132,7 @@ def config_worker():
     sys.stdout.flush()
 
     bionet_config_dict = json.load(open(context.bionet_config_file_path, 'r'))
-    bionet_config_dict['manifest']['$OUTPUT_DIR'] = temp_output_dir
+    bionet_config_dict['manifest']['$OUTPUT_DIR'] = export_dir
     if 'input_dir' in context() and os.path.isdir(context.input_dir):
         bionet_config_dict['manifest']['$INPUT_DIR'] = context.input_dir
     if 'network_dir' in context() and os.path.isdir(context.network_dir):
@@ -241,8 +254,6 @@ def run_tests():
     sys.stdout.flush()
     time.sleep(.1)
 
-    context.interface.execute(shutdown_worker)
-
     context.update(locals())
 
 
@@ -293,7 +304,7 @@ def compute_features(x, model_id=None, export=False, plot=False):
     if export:
         # Attach mod to simulation that will record and cache spikes to disk and export to sonata format (h5).
         spikes_recorder = \
-            SpikesMod(spikes_file=context.spikes_file_name, tmp_dir=context.temp_output_dir,
+            SpikesMod(spikes_file=context.spikes_file_name, tmp_dir=context.export_dir,
                       spikes_sort_order='gid', mode='w')
         sim_step.add_mod(spikes_recorder)
     else:
@@ -309,22 +320,14 @@ def compute_features(x, model_id=None, export=False, plot=False):
         sys.stdout.flush()
         time.sleep(.1)
 
-    if export:
-        export_dir = context.export_file_path.replace('.hdf5', '')
-        export_dir = context.comm.bcast(export_dir, root=0)
-        if context.comm.rank == 0:
-            if not os.path.isdir(export_dir):
-                os.mkdir(export_dir)
-        context.comm.barrier()
-
     if export and context.export_connections:
         start_time = time.time()
-        connection_recorder = SaveSynapses(export_dir)
+        connection_recorder = SaveSynapses(context.export_dir)
         connection_recorder.initialize(sim_step)
         connection_recorder.finalize(sim_step)
         if context.verbose > 1 and context.comm.rank == 0:
-            print('optimize_L4_bionet: pid: %i; model_id: %i; exporting connection weights took %.2f s' %
-                  (os.getpid(), model_id, time.time() - start_time))
+            print('optimize_L4_bionet: pid: %i; model_id: %i; exporting connection weights to %s took %.2f s' %
+                  (os.getpid(), model_id, context.export_dir, time.time() - start_time))
             sys.stdout.flush()
             time.sleep(.1)
         context.comm.barrier()
@@ -353,9 +356,6 @@ def compute_features(x, model_id=None, export=False, plot=False):
     context.comm.barrier()
 
     if context.comm.rank == 0:
-        if export:
-            copy_tree(context.temp_output_dir, export_dir)
-
         for epoch_name in firing_rates_dict:
             for cell_type in firing_rates_dict[epoch_name]:
                 firing_rates_dict[epoch_name][cell_type] = np.mean(firing_rates_dict[epoch_name][cell_type])
@@ -537,12 +537,6 @@ def scale_projection_weights(graph, weight_factors, init_weights=None):
             else:
                 init_weight = con.syn_weight
             con.syn_weight = init_weight * weight_factors[target_pop_name][source_pop_name]
-
-
-def shutdown_worker():
-    if context.comm.rank == 0:
-        if os.path.isdir(context.temp_output_dir):
-            shutil.rmtree(context.temp_output_dir)
 
 
 if __name__ == '__main__':

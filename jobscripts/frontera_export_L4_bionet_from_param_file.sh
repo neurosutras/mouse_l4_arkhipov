@@ -21,5 +21,5 @@ ibrun -n 224 python3 -m nested.analyze \
     --config-file-path=config/optimize_L4_bionet_config.yaml --disp \
     --output-dir=$SCRATCH/data/mouse_l4_arkhipov/output --export \
     --bionet_config_file_path=frontera_config.json --framework=pc --procs_per_worker=224 \
-    --param-file-path=$1 --model-key=$2
+    --param-file-path=$1 --model-key=$2 --label=$2
 EOT
