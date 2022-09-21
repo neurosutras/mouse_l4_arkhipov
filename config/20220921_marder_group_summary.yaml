@@ -1,0 +1,196 @@
+best:
+  params:
+    weight_factor.LIF_exc.l4_e: 0.8589246494269964
+    weight_factor.LIF_exc.l4_i: 1.773983652063441
+    weight_factor.LIF_inh.l4_e: 0.9340683564053202
+    weight_factor.LIF_inh.l4_i: 0.9855411668587117
+    weight_factor.Nr5a1.l4_e: 0.7767998260748674
+    weight_factor.Nr5a1.l4_i: 1.8472615577169686
+    weight_factor.PV1.l4_e: 1.1386633326323394
+    weight_factor.PV1.l4_i: 4.141428577385967
+    weight_factor.PV2.l4_e: 1.1915056918490312
+    weight_factor.PV2.l4_i: 3.94277791047557
+    weight_factor.Rorb.l4_e: 1.188001093089295
+    weight_factor.Rorb.l4_i: 3.0678520934793676
+    weight_factor.Scnn1a.l4_e: 0.4913975095295392
+    weight_factor.Scnn1a.l4_i: 1.2078319944297002
+  features:
+    spont_rate.LIF_exc: 0.706890756302521
+    spont_rate.LIF_inh: 5.2647619047619045
+    spont_rate.Nr5a1: 1.5013333333333334
+    spont_rate.PV1: 2.5025
+    spont_rate.PV2: 2.505714285714286
+    spont_rate.Rorb: 0.8624242424242424
+    spont_rate.Scnn1a: 1.6010810810810812
+    grating_pref_rate.LIF_exc: 7.16
+    grating_ortho_rate.LIF_exc: 1.62
+    grating_rate.LIF_inh: 4.717904761904762
+    grating_pref_rate.Nr5a1: 7.62
+    grating_ortho_rate.Nr5a1: 1.42
+    grating_rate.PV1: 6.6
+    grating_rate.PV2: 8.094285714285714
+    grating_pref_rate.Rorb: 7.14
+    grating_ortho_rate.Rorb: 0.7
+    grating_pref_rate.Scnn1a: 7.14
+    grating_ortho_rate.Scnn1a: 1.4
+  objectives:
+    spont_rate.LIF_exc: 233.7527126739236
+    spont_rate.LIF_inh: 484.10412566505863
+    spont_rate.Nr5a1: 99.88930751707348
+    spont_rate.PV1: 0.0012256595658217248
+    spont_rate.PV2: 8.771804348051106e-05
+    spont_rate.Rorb: 203.13178913315042
+    spont_rate.Scnn1a: 87.04333217039523
+    grating_pref_rate.LIF_exc: 0.0021381515763203127
+    grating_ortho_rate.LIF_exc: 7.17173279065107
+    grating_rate.LIF_inh: 81.44137415554805
+    grating_pref_rate.Nr5a1: 1.779895087499462
+    grating_ortho_rate.Nr5a1: 0.014821869747839575
+    grating_rate.PV1: 21.58596011213206
+    grating_rate.PV2: 1.3685093990629744
+    grating_pref_rate.Rorb: 9.515871965367717e-05
+    grating_ortho_rate.Rorb: 104.05755007098195
+    grating_pref_rate.Scnn1a: 9.515871965367717e-05
+    grating_ortho_rate.Scnn1a: 0.16137937831050275
+
+orig:
+  params:
+    weight_factor.LIF_exc.l4_i: 1.000000E+00
+    weight_factor.LIF_inh.l4_i: 1.000000E+00
+    weight_factor.Nr5a1.l4_i: 1.000000E+00
+    weight_factor.PV1.l4_i: 1.000000E+00
+    weight_factor.PV2.l4_i: 1.000000E+00
+    weight_factor.Rorb.l4_i: 1.000000E+00
+    weight_factor.Scnn1a.l4_i: 1.000000E+00
+    weight_factor.LIF_exc.l4_e: 1.000000E+00
+    weight_factor.LIF_inh.l4_e: 1.000000E+00
+    weight_factor.Nr5a1.l4_e: 1.000000E+00
+    weight_factor.PV1.l4_e: 1.000000E+00
+    weight_factor.PV2.l4_e: 1.000000E+00
+    weight_factor.Rorb.l4_e: 1.000000E+00
+    weight_factor.Scnn1a.l4_e: 1.000000E+00
+  features:
+    grating_ortho_rate.LIF_exc: 1.6
+    grating_ortho_rate.Nr5a1: 1.9
+    grating_ortho_rate.Rorb: 1.28
+    grating_ortho_rate.Scnn1a: 0.96
+    grating_pref_rate.LIF_exc: 8.9
+    grating_pref_rate.Nr5a1: 10.6
+    grating_pref_rate.Rorb: 10.9
+    grating_pref_rate.Scnn1a: 10.02
+    grating_rate.LIF_inh: 7.040761904761904
+    grating_rate.PV1: 16.17
+    grating_rate.PV2: 15.2
+    spont_rate.LIF_exc: 1.1645714285714286
+    spont_rate.LIF_inh: 5.44
+    spont_rate.Nr5a1: 3.1226666666666665
+    spont_rate.PV1: 5.3825
+    spont_rate.PV2: 5.117142857142857
+    spont_rate.Rorb: 2.12
+    spont_rate.Scnn1a: 2.9129729729729728
+  objectives:
+    grating_ortho_rate.LIF_exc: 5.750565570753759
+    grating_ortho_rate.Nr5a1: 43.52918351804309
+    grating_ortho_rate.Rorb: 4.332946359452417
+    grating_ortho_rate.Scnn1a: 43.04908019672638
+    grating_pref_rate.LIF_exc: 24.184879572285414
+    grating_pref_rate.Nr5a1: 93.65196696303279
+    grating_pref_rate.Rorb: 110.61403892325053
+    grating_pref_rate.Scnn1a: 64.85946134697511
+    grating_rate.LIF_inh: 13.109479208598726
+    grating_rate.PV1: 310.36327541689894
+    grating_rate.PV2: 235.94703792085994
+    spont_rate.LIF_exc: 149.788009106046
+    spont_rate.LIF_inh: 547.5796131478861
+    spont_rate.Nr5a1: 0.6574036661150376
+    spont_rate.PV1: 526.3208204020744
+    spont_rate.PV2: 433.66641890861973
+    spont_rate.Rorb: 34.47334954646808
+    spont_rate.Scnn1a: 0.3441996922923102
+targets:
+  spont_rate.LIF_exc: 3.0010052631578943
+  spont_rate.LIF_inh: 2.506888235294118
+  spont_rate.Nr5a1: 3.0010052631578943
+  spont_rate.PV1: 2.506888235294118
+  spont_rate.PV2: 2.506888235294118
+  spont_rate.Rorb: 3.0010052631578943
+  spont_rate.Scnn1a: 3.0010052631578943
+  grating_pref_rate.LIF_exc: 7.143484210526316
+  grating_ortho_rate.LIF_exc: 1.428696842105263
+  grating_rate.LIF_inh: 8.59714705882353
+  grating_pref_rate.Nr5a1: 7.143484210526316
+  grating_ortho_rate.Nr5a1: 1.428696842105263
+  grating_rate.PV1: 8.59714705882353
+  grating_rate.PV2: 8.59714705882353
+  grating_pref_rate.Rorb: 7.143484210526316
+  grating_ortho_rate.Rorb: 1.428696842105263
+  grating_pref_rate.Scnn1a: 7.143484210526316
+  grating_ortho_rate.Scnn1a: 1.428696842105263
+param_labels:
+  weight_factor.LIF_exc.l4_e: Shell (Exc) <- Exc
+  weight_factor.LIF_exc.l4_i: Shell (Exc) <- Inh
+  weight_factor.LIF_inh.l4_e: Shell (Inh) <- Exc
+  weight_factor.LIF_inh.l4_i: Shell (Inh) <- Inh
+  weight_factor.Nr5a1.l4_e: Nr5a1 (Exc) <- Exc
+  weight_factor.Nr5a1.l4_i: Nr5a1 (Exc) <- Inh
+  weight_factor.PV1.l4_e: PV1 (Inh) <- Exc
+  weight_factor.PV1.l4_i: PV1 (Inh) <- Inh
+  weight_factor.PV2.l4_e: PV2 (Inh) <- Exc
+  weight_factor.PV2.l4_i: PV2 (Inh) <- Inh
+  weight_factor.Rorb.l4_e: Rorb (Exc) <- Exc
+  weight_factor.Rorb.l4_i: Rorb (Exc) <- Inh
+  weight_factor.Scnn1a.l4_e: Scnn1a (Exc) <- Exc
+  weight_factor.Scnn1a.l4_i: Scnn1a (Exc) <- Inh
+ordered_param_names:
+  - weight_factor.Nr5a1.l4_e
+  - weight_factor.Nr5a1.l4_i
+  - weight_factor.Rorb.l4_e
+  - weight_factor.Rorb.l4_i
+  - weight_factor.Scnn1a.l4_e
+  - weight_factor.Scnn1a.l4_i
+  - weight_factor.LIF_exc.l4_e
+  - weight_factor.LIF_exc.l4_i
+  - weight_factor.PV1.l4_e
+  - weight_factor.PV1.l4_i
+  - weight_factor.PV2.l4_e
+  - weight_factor.PV2.l4_i
+  - weight_factor.LIF_inh.l4_e
+  - weight_factor.LIF_inh.l4_i
+feature_labels:
+  grating_ortho_rate.LIF_exc: Shell (Exc) - Grating (Ortho)
+  grating_ortho_rate.Nr5a1: Nr5a1 (Exc) - Grating (Ortho)
+  grating_ortho_rate.Rorb: Rorb (Exc) - Grating (Ortho)
+  grating_ortho_rate.Scnn1a: Scnn1a (Exc) - Grating (Ortho)
+  grating_pref_rate.LIF_exc: Shell (Exc) - Grating (Pref)
+  grating_pref_rate.Nr5a1: Nr5a1 (Exc) - Grating (Pref)
+  grating_pref_rate.Rorb: Rorb (Exc) - Grating (Pref)
+  grating_pref_rate.Scnn1a: Scnn1a (Exc) - Grating (Pref)
+  grating_rate.LIF_inh: Shell (Inh) - Grating (All)
+  grating_rate.PV1: PV1 (Inh) - Grating (All)
+  grating_rate.PV2: PV2 (Inh) - Grating (All)
+  spont_rate.LIF_exc: Shell (Exc) - Spont
+  spont_rate.LIF_inh: Shell (Inh) - Spont
+  spont_rate.Nr5a1: Nr5a1 (Exc) - Spont
+  spont_rate.PV1: PV1 (Inh) - Spont
+  spont_rate.PV2: PV2 (Inh) - Spont
+  spont_rate.Rorb: Rorb (Exc) - Spont
+  spont_rate.Scnn1a: Scnn1a (Exc) - Spont
+ordered_feature_names:
+  - spont_rate.Nr5a1
+  - spont_rate.Rorb
+  - spont_rate.Scnn1a
+  - spont_rate.LIF_exc
+  - spont_rate.PV1
+  - spont_rate.PV2
+  - spont_rate.LIF_inh
+  - grating_pref_rate.Nr5a1
+  - grating_ortho_rate.Nr5a1
+  - grating_pref_rate.Rorb
+  - grating_ortho_rate.Rorb
+  - grating_pref_rate.Scnn1a
+  - grating_ortho_rate.Scnn1a
+  - grating_pref_rate.LIF_exc
+  - grating_ortho_rate.LIF_exc
+  - grating_rate.PV1
+  - grating_rate.PV2
+  - grating_rate.LIF_inh
