@@ -9,6 +9,8 @@ import shutil
 import pandas as pd
 import click
 import time
+import datetime
+import uuid
 import sys
 import os
 
@@ -111,6 +113,8 @@ def config_worker():
             label_str = '_%s' % context.label
         else:
             label_str = ''
+
+        optimization_title_str = '_L4_bionet'
 
         if 'export_dir' not in context() or context.export_dir is None:
             timestamp = datetime.datetime.today().strftime('%Y%m%d_%H%M%S')
