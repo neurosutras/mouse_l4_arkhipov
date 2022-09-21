@@ -319,7 +319,7 @@ def compute_features(x, model_id=None, export=False, plot=False):
     sim_step.run()
 
     if context.verbose > 1 and context.comm.rank == 0:
-        print('optimize_L4_bionet: pid: %i; model_id: %i; simulation took %.2f s' %
+        print('optimize_L4_bionet: pid: %i; model_id: %s; simulation took %.2f s' %
               (os.getpid(), model_id, time.time() - start_time))
         sys.stdout.flush()
         time.sleep(.1)
@@ -330,7 +330,7 @@ def compute_features(x, model_id=None, export=False, plot=False):
         connection_recorder.initialize(sim_step)
         connection_recorder.finalize(sim_step)
         if context.verbose > 1 and context.comm.rank == 0:
-            print('optimize_L4_bionet: pid: %i; model_id: %i; exporting connection weights to %s took %.2f s' %
+            print('optimize_L4_bionet: pid: %i; model_id: %s; exporting connection weights to %s took %.2f s' %
                   (os.getpid(), model_id, context.export_dir, time.time() - start_time))
             sys.stdout.flush()
             time.sleep(.1)
@@ -371,7 +371,7 @@ def compute_features(x, model_id=None, export=False, plot=False):
                 results[feature_name] = rate_val
 
         if context.verbose > 1:
-            print('optimize_L4_bionet: pid: %i; model_id: %i; analysis took %.2f s' %
+            print('optimize_L4_bionet: pid: %i; model_id: %s; analysis took %.2f s' %
                   (os.getpid(), model_id, time.time() - start_time))
             sys.stdout.flush()
             time.sleep(.1)
